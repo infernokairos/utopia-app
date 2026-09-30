@@ -180,7 +180,7 @@ class M3ThemeFactory {
   /// Minimalist Monochrome Dark primary seed color for Utopia
   static const Color monochromeSeed = Color(0xFFFFFFFF);
 
-  /// Generates full M3 ColorScheme from a seed color with proper dark monochrome surface tiers.
+  /// Generates full M3 ColorScheme from a seed color with proper light & dark surface tiers.
   static ColorScheme createColorScheme({
     required Color seedColor,
     required bool isDark,
@@ -192,40 +192,65 @@ class M3ThemeFactory {
     Color? customText,
     Color? customSub,
   }) {
-    // Force Dark Mode for full Utopia dark minimalist theme
     final base = ColorScheme.fromSeed(
       seedColor: seedColor,
-      brightness: Brightness.dark,
+      brightness: isDark ? Brightness.dark : Brightness.light,
     );
 
-    // Dark Monochrome Harmonization
-    final effectivePrimary = customPrimary ?? const Color(0xFFFFFFFF);
-    final effectiveSecondary = customSecondary ?? const Color(0xFFD4D4D8);
-    final effectiveSurface = surfaceBackground ?? const Color(0xFF09090B);
-    final effectiveText = customText ?? const Color(0xFFFFFFFF);
-    final effectiveSub = customSub ?? const Color(0xFFA1A1AA);
+    final effectivePrimary = customPrimary ?? seedColor;
+    final effectiveSecondary = customSecondary ?? seedColor;
+    final effectiveSurface = surfaceBackground ??
+        (isDark ? const Color(0xFF09090B) : const Color(0xFFFFF8F6));
+    final effectiveText = customText ??
+        (isDark ? const Color(0xFFFFFFFF) : const Color(0xFF1C1B1F));
+    final effectiveSub = customSub ??
+        (isDark ? const Color(0xFFA1A1AA) : const Color(0xFF49454F));
 
-    const onPrimary = Color(0xFF000000);
-    const onSecondary = Color(0xFF000000);
+    final onPrimary = ThemeData.estimateBrightnessForColor(effectivePrimary) == Brightness.dark
+        ? const Color(0xFFFFFFFF)
+        : const Color(0xFF000000);
+    final onSecondary = ThemeData.estimateBrightnessForColor(effectiveSecondary) == Brightness.dark
+        ? const Color(0xFFFFFFFF)
+        : const Color(0xFF000000);
 
-    const primaryContainer = Color(0xFF27272A);
-    const onPrimaryContainer = Color(0xFFFFFFFF);
+    final primaryContainer = isDark
+        ? const Color(0xFF27272A)
+        : Color.lerp(effectivePrimary, Colors.white, 0.85)!;
+    final onPrimaryContainer = isDark
+        ? const Color(0xFFFFFFFF)
+        : Color.lerp(effectivePrimary, Colors.black, 0.45)!;
 
-    const secondaryContainer = Color(0xFF18181B);
-    const onSecondaryContainer = Color(0xFFE4E4E7);
+    final secondaryContainer = isDark
+        ? const Color(0xFF18181B)
+        : Color.lerp(effectiveSecondary, Colors.white, 0.88)!;
+    final onSecondaryContainer = isDark
+        ? const Color(0xFFE4E4E7)
+        : Color.lerp(effectiveSecondary, Colors.black, 0.45)!;
 
-    // Monochrome surface container elevation steps
-    const surfaceContainerLowest = Color(0xFF000000);
-    final surfaceContainerLow = customSurface ?? const Color(0xFF121214);
-    final surfaceContainer = customCard ?? const Color(0xFF18181B);
-    const surfaceContainerHigh = Color(0xFF27272A);
-    const surfaceContainerHighest = Color(0xFF3F3F46);
+    // Surface container elevation steps for Material 3
+    final surfaceContainerLowest = isDark
+        ? (surfaceBackground ?? const Color(0xFF000000))
+        : const Color(0xFFFFFFFF);
+    final surfaceContainerLow = customSurface ??
+        (isDark ? const Color(0xFF121214) : Color.lerp(effectiveSurface, Colors.black, 0.02)!);
+    final surfaceContainer = customCard ??
+        (isDark ? const Color(0xFF18181B) : Color.lerp(effectiveSurface, Colors.black, 0.04)!);
+    final surfaceContainerHigh = isDark
+        ? const Color(0xFF27272A)
+        : Color.lerp(effectiveSurface, Colors.black, 0.06)!;
+    final surfaceContainerHighest = isDark
+        ? const Color(0xFF3F3F46)
+        : Color.lerp(effectiveSurface, Colors.black, 0.09)!;
 
-    const outlineVariant = Color(0xFF27272A);
-    const outline = Color(0xFF3F3F46);
+    final outlineVariant = isDark
+        ? const Color(0xFF27272A)
+        : Color.lerp(effectiveSurface, Colors.black, 0.12)!;
+    final outline = isDark
+        ? const Color(0xFF3F3F46)
+        : Color.lerp(effectiveSurface, Colors.black, 0.25)!;
 
     return base.copyWith(
-      brightness: Brightness.dark,
+      brightness: isDark ? Brightness.dark : Brightness.light,
       primary: effectivePrimary,
       onPrimary: onPrimary,
       primaryContainer: primaryContainer,

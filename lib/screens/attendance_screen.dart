@@ -19,6 +19,7 @@ import '../models/user_timetable.dart';
 import '../services/user_timetable_service.dart';
 import '../theme/m3_expressive_theme.dart';
 import 'total_attendance_screen.dart';
+import 'attendance_what_if_tab.dart';
 
 enum _AttendanceViewState { initial, loading, loaded, error }
 
@@ -1518,28 +1519,17 @@ class _AttendanceScreenState extends State<AttendanceScreen>
         children: [
           Row(
             children: [
-              Icon(Icons.school_rounded, color: U.primary, size: 20),
+              Icon(Icons.school_rounded, color: U.dim, size: 16),
               const SizedBox(width: 8),
               Text(
-                'Academic Insights',
+                'ACADEMIC INSIGHTS',
                 style: GoogleFonts.outfit(
-                  color: U.text,
-                  fontSize: 16,
+                  color: U.dim,
+                  fontSize: 10.5,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
+                  letterSpacing: 1.1,
                 ),
               ),
-              const Spacer(),
-              if (_isSyncingLive)
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    strokeCap: StrokeCap.round,
-                    valueColor: AlwaysStoppedAnimation<Color>(U.primary),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -2452,7 +2442,11 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                   ? 'Syncing live data...'
                   : (_portalDown
                       ? 'Portal offline • Showing cached'
-                      : (_currentTabIndex == 2 ? 'Insights' : 'Overview')),
+                      : (_currentTabIndex == 2
+                          ? 'Insights'
+                          : (_currentTabIndex == 1
+                              ? 'What-If Simulator'
+                              : 'Overview'))),
               style: GoogleFonts.outfit(
                 color: _portalDown
                     ? U.red
@@ -2470,12 +2464,11 @@ class _AttendanceScreenState extends State<AttendanceScreen>
             IconButton(
               onPressed: _isSyncingLive ? null : _refresh,
               tooltip: _isSyncingLive ? 'Syncing...' : 'Sync Portal Data',
-              icon: _isSyncingLive
-                  ? RotationTransition(
-                      turns: _syncMotionController,
-                      child: Icon(Icons.sync_rounded, color: U.primary, size: 22),
-                    )
-                  : Icon(Icons.sync_rounded, color: U.text, size: 22),
+              icon: Icon(
+                Icons.sync_rounded,
+                color: _isSyncingLive ? U.sub.withValues(alpha: 0.4) : U.text,
+                size: 22,
+              ),
             ),
           _buildThreeDotsMenu(),
           const SizedBox(width: 6),
@@ -2750,6 +2743,15 @@ class _AttendanceScreenState extends State<AttendanceScreen>
               duration: const Duration(milliseconds: 240),
               child: () {
                 switch (_currentTabIndex) {
+                  case 1:
+                    return AttendanceWhatIfTab(
+                      key: const ValueKey('attendance_what_if_tab'),
+                      attendanceData: _attendanceData,
+                      targetPercentage: _targetPercentage,
+                      isColoredMode: _isColoredMode,
+                      onTargetChanged: (newTarget) => _setTarget(newTarget),
+                      onRefresh: _refresh,
+                    );
                   case 2:
                     return _buildInsightsTab();
                   case 0:
@@ -2800,6 +2802,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _buildNavItem(0, Icons.donut_large_rounded, 'Overview'),
+                  _buildNavItem(1, Icons.tune_rounded, 'What-If'),
                   _buildNavItem(2, Icons.bar_chart_rounded, 'Insights'),
                 ],
               ),
@@ -3788,40 +3791,35 @@ class _AttendanceScreenState extends State<AttendanceScreen>
       verdictIcon = Icons.event_busy_rounded;
     }
 
+    final isDark = appThemeNotifier.value.isDark;
+
     return Container(
-      margin: const EdgeInsets.only(top: 20),
+      margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
-        color: U.card,
-        borderRadius: BorderRadius.circular(24),
+        color: isDark ? U.surfaceContainerHigh : U.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: U.border.withValues(alpha: 0.8),
-          width: 1.0,
+          color: U.outlineVariant.withValues(alpha: 0.3),
+          width: 0.8,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: appThemeNotifier.value.isDark ? 0.2 : 0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-            spreadRadius: -2,
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header of tomorrow section
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             child: Row(
               children: [
-                Icon(Icons.psychology_outlined, color: U.primary, size: 22),
+                Icon(Icons.psychology_outlined, color: U.dim, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  "Tomorrow's Attendance Analyzer",
+                  "TOMORROW'S PREDICTOR",
                   style: GoogleFonts.outfit(
-                    color: U.text,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                    color: U.dim,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
                   ),
                 ),
               ],
@@ -4034,12 +4032,12 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Today's Attendance",
+                      "TODAY'S ATTENDANCE",
                       style: GoogleFonts.outfit(
-                        color: U.text,
-                        fontSize: 16,
+                        color: U.dim,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
+                        letterSpacing: 1.1,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -4350,6 +4348,11 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           statusLabel: statusLabel,
         ),
 
+        const SizedBox(height: 18),
+
+        // ── 3.5 Today's Timed Attendance Bubble Storage ──
+        _buildTodayAttendanceBubblesWidget(),
+
         const SizedBox(height: 24),
 
         // ── 4. Insight Tip Banner ──
@@ -4373,167 +4376,129 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     required String statusLabel,
   }) {
     final missedClasses = (totalClasses - totalAttended).clamp(0, 9999);
+    final isDark = appThemeNotifier.value.isDark;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: [U.card, color.withValues(alpha: 0.14)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isDark ? U.surfaceContainerHigh : U.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: U.border.withValues(alpha: 0.8),
-          width: 1.0,
+          color: color.withValues(alpha: 0.25),
+          width: 0.8,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(
-              alpha: appThemeNotifier.value.isDark ? 0.2 : 0.03,
-            ),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-            spreadRadius: -2,
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Icon(
-                  Icons.bar_chart_rounded,
-                  color: color,
-                  size: 26,
+              Text(
+                'OVERALL ATTENDANCE',
+                style: GoogleFonts.outfit(
+                  color: U.dim,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
                 ),
               ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 10,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   statusLabel,
                   style: GoogleFonts.outfit(
                     color: color,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text(
-            'Overall Attendance',
-            style: GoogleFonts.outfit(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${overall.toStringAsFixed(1)}%',
-            style: GoogleFonts.outfit(
-              color: U.text,
-              fontSize: 48,
-              fontWeight: FontWeight.w800,
-              height: 1,
-            ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '${overall.toStringAsFixed(1)}%',
+                style: GoogleFonts.outfit(
+                  color: U.text,
+                  fontSize: 42,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.0,
+                  height: 1.0,
+                ),
+              ),
+              if (studentName.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    studentName,
+                    style: GoogleFonts.outfit(
+                      color: U.sub,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 14),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
               minHeight: 6,
-              backgroundColor: U.surface,
+              backgroundColor: U.border.withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation<Color>(color),
               value: (overall / 100).clamp(0.0, 1.0),
             ),
           ),
-          if (studentName.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Icon(
-                  Icons.person_outline_rounded,
-                  color: U.sub,
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    studentName,
-                    style: GoogleFonts.outfit(
-                      color: U.text,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ],
+          const SizedBox(height: 18),
+          Divider(height: 1, thickness: 0.4, color: U.border.withValues(alpha: 0.3)),
+          const SizedBox(height: 14),
 
-          // ── Merged Class Totals (Classes Held, Attended, Missed inside card) ──
-          Container(
-            margin: const EdgeInsets.only(top: 18),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-            decoration: BoxDecoration(
-              color: U.surface.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: U.border.withValues(alpha: 0.5),
-                width: 0.8,
+          // Flat stat row without nested card
+          Row(
+            children: [
+              Expanded(
+                child: _buildMergedStatCol(
+                  label: 'Classes Held',
+                  value: '$totalClasses',
+                  icon: Icons.event_note_rounded,
+                  color: U.primary,
+                ),
               ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildMergedStatCol(
-                    label: 'Classes Held',
-                    value: '$totalClasses',
-                    icon: Icons.event_note_rounded,
-                    color: U.primary,
-                  ),
+              Container(width: 1, height: 24, color: U.border.withValues(alpha: 0.3)),
+              Expanded(
+                child: _buildMergedStatCol(
+                  label: 'Attended',
+                  value: '$totalAttended',
+                  icon: Icons.check_circle_outline_rounded,
+                  color: color,
                 ),
-                Container(width: 1, height: 28, color: U.border.withValues(alpha: 0.5)),
-                Expanded(
-                  child: _buildMergedStatCol(
-                    label: 'Attended',
-                    value: '$totalAttended',
-                    icon: Icons.check_circle_outline_rounded,
-                    color: color,
-                  ),
+              ),
+              Container(width: 1, height: 24, color: U.border.withValues(alpha: 0.3)),
+              Expanded(
+                child: _buildMergedStatCol(
+                  label: 'Missed',
+                  value: '$missedClasses',
+                  icon: Icons.cancel_outlined,
+                  color: U.red,
                 ),
-                Container(width: 1, height: 28, color: U.border.withValues(alpha: 0.5)),
-                Expanded(
-                  child: _buildMergedStatCol(
-                    label: 'Missed',
-                    value: '$missedClasses',
-                    icon: Icons.cancel_outlined,
-                    color: U.red,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -4552,14 +4517,14 @@ class _AttendanceScreenState extends State<AttendanceScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 5),
             Text(
               value,
               style: GoogleFonts.outfit(
                 color: U.text,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -4569,13 +4534,458 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           label,
           style: GoogleFonts.outfit(
             color: U.sub,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w500,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
       ],
+    );
+  }
+
+  Widget _buildTodayAttendanceBubblesWidget() {
+    final roll = _savedCredentials?['rollNumber'] ?? '';
+    if (roll.isEmpty) return const SizedBox.shrink();
+
+    return FutureBuilder<List<DailyAttendancePoint>>(
+      future: AttendanceHistoryService.getTodayDailyPoints(roll),
+      builder: (context, snapshot) {
+        final points = snapshot.data ?? [];
+        final isDark = appThemeNotifier.value.isDark;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Section Header ──
+            Row(
+              children: [
+                Icon(Icons.bubble_chart_rounded, color: U.primary, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  "TODAY'S ATTENDANCE BUBBLES",
+                  style: GoogleFonts.outfit(
+                    color: U.dim,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                if (points.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: U.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${points.length}',
+                      style: GoogleFonts.outfit(
+                        color: U.primary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+                const Spacer(),
+                GestureDetector(
+                  onTap: () async {
+                    if (_attendanceData != null) {
+                      await AttendanceHistoryService.recordDailyPoint(roll, _attendanceData!);
+                      if (mounted) setState(() {});
+                    }
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_circle_outline_rounded, size: 14, color: U.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Drop Point',
+                        style: GoogleFonts.outfit(
+                          color: U.primary,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // ── Bubble Stream ──
+            if (points.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? U.surfaceContainerHigh : U.surfaceContainer,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: U.outlineVariant.withValues(alpha: 0.3),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: U.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.bubble_chart_outlined, color: U.primary, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Today's points storage empty",
+                            style: GoogleFonts.outfit(
+                              color: U.text,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "Syncs today will automatically save timed snapshot bubbles.",
+                            style: GoogleFonts.outfit(
+                              color: U.sub,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              SizedBox(
+                height: 52,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: points.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 10),
+                  itemBuilder: (context, index) {
+                    final point = points[index];
+                    final isPositive = point.deltaOverall > 0.001;
+                    final isNegative = point.deltaOverall < -0.001;
+                    final badgeColor = isPositive
+                        ? U.green
+                        : (isNegative ? U.red : U.primary);
+
+                    return GestureDetector(
+                      onTap: () => _showDailyPointDetailModal(context, point),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isDark ? U.surfaceContainerHigh : U.surfaceContainer,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: badgeColor.withValues(alpha: 0.35),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: badgeColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  point.timeFormatted,
+                                  style: GoogleFonts.outfit(
+                                    color: U.sub,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                Text(
+                                  '${point.overallPercentage.toStringAsFixed(1)}%',
+                                  style: GoogleFonts.outfit(
+                                    color: U.text,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (point.deltaOverall != 0) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: badgeColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  point.deltaOverall > 0
+                                      ? '+${point.deltaOverall.toStringAsFixed(1)}%'
+                                      : '${point.deltaOverall.toStringAsFixed(1)}%',
+                                  style: GoogleFonts.outfit(
+                                    color: badgeColor,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDailyPointDetailModal(BuildContext context, DailyAttendancePoint point) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final isDark = appThemeNotifier.value.isDark;
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: BoxDecoration(
+            color: isDark ? U.surfaceContainerHigh : U.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(
+              color: U.outlineVariant.withValues(alpha: 0.3),
+              width: 0.8,
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Grab handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: U.dim.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Title Header
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: U.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.bubble_chart_rounded, color: U.primary, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Today\'s Timed Snapshot',
+                          style: GoogleFonts.outfit(
+                            color: U.text,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          'Recorded at ${point.timeFormatted} (${point.dateKey})',
+                          style: GoogleFonts.outfit(
+                            color: U.sub,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Overall Stat Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: U.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: U.primary.withValues(alpha: 0.2),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'OVERALL ATTENDANCE',
+                          style: GoogleFonts.outfit(
+                            color: U.sub,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        Text(
+                          '${point.overallPercentage.toStringAsFixed(1)}%',
+                          style: GoogleFonts.outfit(
+                            color: U.text,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'HELD / ATTENDED',
+                          style: GoogleFonts.outfit(
+                            color: U.sub,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        Text(
+                          '${point.totalAttended} / ${point.totalClasses}',
+                          style: GoogleFonts.outfit(
+                            color: U.text,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+              Text(
+                'BULK SUBJECT DATA AT THIS TIME',
+                style: GoogleFonts.outfit(
+                  color: U.dim,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Subject List
+              Expanded(
+                child: point.subjects.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No subject details captured',
+                          style: GoogleFonts.outfit(color: U.sub, fontSize: 13),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: point.subjects.length,
+                        separatorBuilder: (context, index) => Divider(
+                          height: 1,
+                          thickness: 0.4,
+                          color: U.border.withValues(alpha: 0.3),
+                        ),
+                        itemBuilder: (context, index) {
+                          final sub = point.subjects[index];
+                          final sName = (sub['subject'] ?? 'Subject').toString();
+                          final sPct = (sub['percentage'] as num?)?.toDouble() ?? 0.0;
+                          final sHeld = (sub['totalClasses'] as num?)?.toInt() ?? 0;
+                          final sAtt = (sub['attendedClasses'] as num?)?.toInt() ?? 0;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        sName,
+                                        style: GoogleFonts.outfit(
+                                          color: U.text,
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '$sAtt / $sHeld classes attended',
+                                        style: GoogleFonts.outfit(
+                                          color: U.sub,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  '${sPct.toStringAsFixed(1)}%',
+                                  style: GoogleFonts.outfit(
+                                    color: U.text,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -4611,26 +5021,19 @@ class _AttendanceScreenState extends State<AttendanceScreen>
             ? _formatShortTime(comp.previousTimestamp)
             : 'Baseline';
 
+        final isDark = appThemeNotifier.value.isDark;
+
         return Container(
           decoration: BoxDecoration(
-            color: U.card,
+            color: isDark ? U.surfaceContainerHigh : U.surfaceContainer,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: U.border.withValues(alpha: 0.7),
-              width: 1.0,
+              color: U.outlineVariant.withValues(alpha: 0.3),
+              width: 0.8,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: appThemeNotifier.value.isDark ? 0.25 : 0.04,
-                ),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
-              ),
-            ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -4638,17 +5041,13 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                 Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         color: badgeColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: badgeColor.withValues(alpha: 0.25),
-                          width: 0.8,
-                        ),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(trendIcon, color: badgeColor, size: 20),
+                      child: Icon(trendIcon, color: badgeColor, size: 18),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -4656,11 +5055,12 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Attendance Progress',
+                            'ATTENDANCE TREND',
                             style: GoogleFonts.outfit(
-                              color: U.text,
-                              fontSize: 16,
+                              color: U.dim,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w700,
+                              letterSpacing: 1.1,
                             ),
                           ),
                           const SizedBox(height: 2),

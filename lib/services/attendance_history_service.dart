@@ -86,11 +86,208 @@ class AttendanceComparison {
   }
 }
 
+class DailyAttendancePoint {
+  final String id;
+  final DateTime timestamp;
+  final String dateKey; // YYYY-MM-DD
+  final double overallPercentage;
+  final int totalClasses;
+  final int totalAttended;
+  final double deltaOverall;
+  final int deltaAttended;
+  final int deltaHeld;
+  final List<Map<String, dynamic>> subjects;
+
+  const DailyAttendancePoint({
+    required this.id,
+    required this.timestamp,
+    required this.dateKey,
+    required this.overallPercentage,
+    required this.totalClasses,
+    required this.totalAttended,
+    required this.deltaOverall,
+    required this.deltaAttended,
+    required this.deltaHeld,
+    required this.subjects,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'timestamp': timestamp.toIso8601String(),
+        'dateKey': dateKey,
+        'overallPercentage': overallPercentage,
+        'totalClasses': totalClasses,
+        'totalAttended': totalAttended,
+        'deltaOverall': deltaOverall,
+        'deltaAttended': deltaAttended,
+        'deltaHeld': deltaHeld,
+        'subjects': subjects,
+      };
+
+  factory DailyAttendancePoint.fromJson(Map<String, dynamic> json) {
+    return DailyAttendancePoint(
+      id: json['id'] as String? ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
+      timestamp:
+          DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
+      dateKey: json['dateKey'] as String? ?? '',
+      overallPercentage:
+          (json['overallPercentage'] as num?)?.toDouble() ?? 0.0,
+      totalClasses: (json['totalClasses'] as num?)?.toInt() ?? 0,
+      totalAttended: (json['totalAttended'] as num?)?.toInt() ?? 0,
+      deltaOverall: (json['deltaOverall'] as num?)?.toDouble() ?? 0.0,
+      deltaAttended: (json['deltaAttended'] as num?)?.toInt() ?? 0,
+      deltaHeld: (json['deltaHeld'] as num?)?.toInt() ?? 0,
+      subjects: (json['subjects'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>(),
+    );
+  }
+
+  String get timeFormatted {
+    final hour12 = timestamp.hour % 12 == 0 ? 12 : timestamp.hour % 12;
+    final minStr = timestamp.minute.toString().padLeft(2, '0');
+    final ampm = timestamp.hour >= 12 ? 'PM' : 'AM';
+    return '$hour12:$minStr $ampm';
+  }
+}
+
 class AttendanceHistoryService {
   static String _currKey(String roll) =>
       'attendance_history_curr_${roll.trim().toUpperCase()}';
   static String _prevKey(String roll) =>
       'attendance_history_prev_${roll.trim().toUpperCase()}';
+  static String _dailyPointsKey(String roll) =>
+      'daily_attendance_bubbles_${roll.trim().toUpperCase()}';
+  static String _dailyDateKey(String roll) =>
+      'daily_attendance_date_${roll.trim().toUpperCase()}';
+
+  static String _todayDateKey() {
+    final now = DateTime.now();
+    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+  }
+
+  /// Fetches today's saved bubble points.
+  /// If stored points belong to a previous day (yesterday or older), clears them automatically!
+  static Future<List<DailyAttendancePoint>> getTodayDailyPoints(
+      String rollNumber) async {
+    final roll = rollNumber.trim().toUpperCase();
+    if (roll.isEmpty) return const [];
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final storedDate = prefs.getString(_dailyDateKey(roll));
+      final todayStr = _todayDateKey();
+
+      // Refresh / wipe if stored date is NOT today!
+      if (storedDate != todayStr) {
+        await prefs.remove(_dailyPointsKey(roll));
+        await prefs.setString(_dailyDateKey(roll), todayStr);
+        return const [];
+      }
+
+      final rawJson = prefs.getString(_dailyPointsKey(roll));
+      if (rawJson == null || rawJson.isEmpty) return const [];
+
+      final List<dynamic> decoded = jsonDecode(rawJson);
+      return decoded
+          .map((item) => DailyAttendancePoint.fromJson(
+              item as Map<String, dynamic>))
+          .where((p) => p.dateKey == todayStr)
+          .toList();
+    } catch (e) {
+      debugPrint('AttendanceHistoryService: getTodayDailyPoints error: $e');
+      return const [];
+    }
+  }
+
+  /// Records a new timed bubble point for today if scraping occurs.
+  static Future<DailyAttendancePoint?> recordDailyPoint(
+    String rollNumber,
+    Map<String, dynamic> data,
+  ) async {
+    final roll = rollNumber.trim().toUpperCase();
+    if (roll.isEmpty) return null;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final todayStr = _todayDateKey();
+      final existingPoints = await getTodayDailyPoints(roll);
+
+      final now = DateTime.now();
+      final overall = (data['overallPercentage'] as num?)?.toDouble() ?? 0.0;
+      final totalClasses = (data['totalClasses'] as num?)?.toInt() ?? 0;
+      final totalAttended = (data['totalAttended'] as num?)?.toInt() ?? 0;
+
+      if (overall <= 0 && totalClasses <= 0) return null;
+
+      final subjectsList = (data['subjects'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>();
+
+      double deltaOverall = 0.0;
+      int deltaAttended = 0;
+      int deltaHeld = 0;
+
+      if (existingPoints.isNotEmpty) {
+        final lastPoint = existingPoints.last;
+        deltaOverall = overall - lastPoint.overallPercentage;
+        deltaAttended = totalAttended - lastPoint.totalAttended;
+        deltaHeld = totalClasses - lastPoint.totalClasses;
+
+        // If recorded within last 30 seconds and values haven't changed, return last point
+        if (now.difference(lastPoint.timestamp).inSeconds < 30 &&
+            (deltaOverall.abs() < 0.001 && deltaAttended == 0 && deltaHeld == 0)) {
+          return lastPoint;
+        }
+      }
+
+      final newPoint = DailyAttendancePoint(
+        id: '${now.millisecondsSinceEpoch}',
+        timestamp: now,
+        dateKey: todayStr,
+        overallPercentage: overall,
+        totalClasses: totalClasses,
+        totalAttended: totalAttended,
+        deltaOverall: deltaOverall,
+        deltaAttended: deltaAttended,
+        deltaHeld: deltaHeld,
+        subjects: subjectsList
+            .map((s) => {
+                  'subject': (s['subject'] ?? '').toString(),
+                  'totalClasses': (s['totalClasses'] as num?)?.toInt() ?? 0,
+                  'attendedClasses':
+                      (s['attendedClasses'] as num?)?.toInt() ?? 0,
+                  'percentage': (s['percentage'] as num?)?.toDouble() ?? 0.0,
+                })
+            .toList(),
+      );
+
+      final updatedList = List<DailyAttendancePoint>.from(existingPoints)..add(newPoint);
+
+      await prefs.setString(
+          _dailyPointsKey(roll),
+          jsonEncode(updatedList.map((p) => p.toJson()).toList()));
+      await prefs.setString(_dailyDateKey(roll), todayStr);
+
+      return newPoint;
+    } catch (e) {
+      debugPrint('AttendanceHistoryService: recordDailyPoint error: $e');
+      return null;
+    }
+  }
+
+  /// Clears stored daily bubble points for the roll number.
+  static Future<void> clearDailyPoints(String rollNumber) async {
+    final roll = rollNumber.trim().toUpperCase();
+    if (roll.isEmpty) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_dailyPointsKey(roll));
+      await prefs.remove(_dailyDateKey(roll));
+    } catch (e) {
+      debugPrint('AttendanceHistoryService: clearDailyPoints error: $e');
+    }
+  }
 
   /// Saves current snapshot and promotes earlier snapshot to previous snapshot if timestamp differs.
   static Future<void> recordSnapshot(
@@ -131,8 +328,6 @@ class AttendanceHistoryService {
           final oldTsStr = oldCurr['timestamp'] as String?;
           final oldTs = oldTsStr != null ? DateTime.tryParse(oldTsStr) : null;
 
-          // If the existing snapshot was recorded at an earlier time (e.g. >= 1 min prior)
-          // push oldCurr to previous snapshot!
           if (oldTs != null &&
               now.difference(oldTs).inMinutes >= 1) {
             await prefs.setString(_prevKey(roll), currJson);
@@ -143,6 +338,7 @@ class AttendanceHistoryService {
       }
 
       await prefs.setString(_currKey(roll), jsonEncode(newSnapshot));
+      await recordDailyPoint(roll, data);
     } catch (e) {
       debugPrint('AttendanceHistoryService: recordSnapshot failed: $e');
     }

@@ -3,45 +3,6 @@ import 'delve_theme.dart';
 
 /// Clean minimalist monochrome dark themes for Delve.
 class DelveThemes {
-  /// OLED Pitch Black
-  static const wisteriaDark = DelveTheme(
-    name: 'OLED Black',
-    background: Color(0xFF000000),
-    text: Color(0xFFFFFFFF),
-    botanicalInk: Color(0xFF71717A), 
-    accent: Color(0xFFFFFFFF), 
-    accentSecondary: Color(0xFFD4D4D8),
-    isDark: true,
-    feel: 'Pure black content-first focus.',
-    flowerType: FlowerType.wisteria,
-  );
-
-  /// Obsidian Minimal
-  static const bauhiniaDark = DelveTheme(
-    name: 'Obsidian',
-    background: Color(0xFF09090B),
-    text: Color(0xFFFAFAFA),
-    botanicalInk: Color(0xFF52525B), 
-    accent: Color(0xFFFAFAFA), 
-    accentSecondary: Color(0xFFE4E4E7),
-    isDark: true,
-    feel: 'Deep matte dark sanctuary.',
-    flowerType: FlowerType.bauhinia,
-  );
-
-  /// Charcoal Contrast
-  static const sakuraDark = DelveTheme(
-    name: 'Charcoal',
-    background: Color(0xFF121214),
-    text: Color(0xFFF4F4F5),
-    botanicalInk: Color(0xFF71717A), 
-    accent: Color(0xFFFFFFFF), 
-    accentSecondary: Color(0xFFE4E4E7),
-    isDark: true,
-    feel: 'Sleek high contrast grayscale.',
-    flowerType: FlowerType.sakura,
-  );
-
   /// Midnight Graphite
   static const mapleDark = DelveTheme(
     name: 'Graphite',
@@ -107,10 +68,63 @@ class DelveThemes {
     flowerType: FlowerType.maple,
   );
 
+  /// Rose Gold (light)
+  static const roseGoldLight = DelveTheme(
+    name: 'Rose Gold',
+    background: Color(0xFFFAF8F7),
+    text: Color(0xFF1F191B),
+    botanicalInk: Color(0xFFE6DDD8),
+    accent: Color(0xFFC2727E),
+    accentSecondary: Color(0xFFD47A62),
+    isDark: false,
+    feel: 'Clean ivory canvas with elegant rose-gold highlights.',
+    flowerType: FlowerType.sakura,
+  );
+
+  /// Baby Lav (light)
+  static const purpleBabyLight = DelveTheme(
+    name: 'Baby Lav',
+    background: Color(0xFFF7F5FC),
+    text: Color(0xFF1B1626),
+    botanicalInk: Color(0xFFE2D9F3),
+    accent: Color(0xFF8353E2),
+    accentSecondary: Color(0xFF537BE2),
+    isDark: false,
+    feel: 'Restorative lavender pastel palette with soothing digital violet accents.',
+    flowerType: FlowerType.wisteria,
+  );
+
+  /// Sweet Lime (dark)
+  static const sweetLimeDark = DelveTheme(
+    name: 'Sweet Lime',
+    background: Color(0xFF0B0F0B),
+    text: Color(0xFFF1F7F1),
+    botanicalInk: Color(0xFF263A29),
+    accent: Color(0xFF84E042),
+    accentSecondary: Color(0xFF38D9A9),
+    isDark: true,
+    feel: 'Vibrant lime & electric citrus on deep obsidian slate.',
+    flowerType: FlowerType.bauhinia,
+  );
+
+  /// Say Inferno (dark)
+  static const sayInfernoDark = DelveTheme(
+    name: 'Say Inferno',
+    background: Color(0xFF120F10),
+    text: Color(0xFFFFFBF7),
+    botanicalInk: Color(0xFF5C2016),
+    accent: Color(0xFFFF3D00),
+    accentSecondary: Color(0xFFFF6D00),
+    isDark: true,
+    feel: 'Blazing flame red & warm ember soot dark mode.',
+    flowerType: FlowerType.maple,
+  );
+
   static const List<DelveTheme> all = [
-    wisteriaDark,
-    bauhiniaDark,
-    sakuraDark,
+    sayInfernoDark,
+    sweetLimeDark,
+    roseGoldLight,
+    purpleBabyLight,
     mapleDark,
     wisteriaLight,
     bauhiniaLight,
@@ -118,11 +132,11 @@ class DelveThemes {
     mapleLight,
   ];
 
-  static List<DelveTheme> get darkThemes => all;
-  static List<DelveTheme> get lightThemes => [];
+  static List<DelveTheme> get darkThemes => all.where((t) => t.isDark).toList();
+  static List<DelveTheme> get lightThemes => all.where((t) => !t.isDark).toList();
 
   static DelveTheme getByName(String name) {
-    return all.firstWhere((t) => t.name == name, orElse: () => wisteriaDark);
+    return all.firstWhere((t) => t.name == name, orElse: () => sweetLimeDark);
   }
 
   static DelveTheme getByNameAndMode(String name, bool isDark) {

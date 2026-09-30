@@ -226,45 +226,20 @@ class _FriendsScreenState extends State<FriendsScreen>
                             splashRadius: 20,
                             visualDensity: VisualDensity.compact,
                           ),
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              IconButton(
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    buildGraphCrossfadeRoute(const LinkGraphScreen()),
-                                  );
-                                },
-                                icon: Icon(
-                                  Icons.hub_outlined,
-                                  color: U.primary,
-                                  size: 20,
-                                ),
-                                tooltip: 'Link Graph View',
-                                splashRadius: 20,
-                                visualDensity: VisualDensity.compact,
-                              ),
-                              Positioned(
-                                top: 0,
-                                right: -2,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: U.primary,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    'BETA',
-                                    style: GoogleFonts.robotoFlex(
-                                      fontSize: 7,
-                                      fontWeight: FontWeight.w700,
-                                      color: U.getContrastColor(U.primary),
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          IconButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                buildGraphCrossfadeRoute(const LinkGraphScreen()),
+                              );
+                            },
+                            icon: Icon(
+                              Icons.hub_outlined,
+                              color: U.primary,
+                              size: 20,
+                            ),
+                            tooltip: 'Link Graph View',
+                            splashRadius: 20,
+                            visualDensity: VisualDensity.compact,
                           ),
                         ],
                       ),

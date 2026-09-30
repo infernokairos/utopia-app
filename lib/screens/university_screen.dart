@@ -260,7 +260,6 @@ class _UniversityScreenState extends State<UniversityScreen> {
           icon: Icons.rocket_launch_outlined,
           color: theme.primary,
           delay: 150,
-          showBetaBadge: true,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const ProjectsFeedScreen()),
@@ -503,7 +502,6 @@ class _UniversityScreenState extends State<UniversityScreen> {
                       isDisabled: card.isDisabled,
                       delay: card.delay,
                       onTap: card.onTap,
-                      showBetaBadge: card.showBetaBadge,
                     );
                   },
                 ),
@@ -523,7 +521,6 @@ class _CardItem {
   final bool isDisabled;
   final int delay;
   final VoidCallback onTap;
-  final bool showBetaBadge;
 
   _CardItem({
     required this.title,
@@ -533,7 +530,6 @@ class _CardItem {
     this.isDisabled = false,
     required this.delay,
     required this.onTap,
-    this.showBetaBadge = false,
   });
 }
 
@@ -624,7 +620,6 @@ class _UniversityCard extends StatelessWidget {
   final bool isDisabled;
   final VoidCallback onTap;
   final int delay;
-  final bool showBetaBadge;
 
   const _UniversityCard({
     required this.title,
@@ -634,7 +629,6 @@ class _UniversityCard extends StatelessWidget {
     this.isDisabled = false,
     required this.onTap,
     required this.delay,
-    this.showBetaBadge = false,
   });
 
   @override
@@ -720,38 +714,7 @@ class _UniversityCard extends StatelessWidget {
           : cardContent,
     );
 
-    final content = showBetaBadge
-        ? Stack(
-            clipBehavior: Clip.none,
-            children: [
-              card,
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                  decoration: BoxDecoration(
-                    color: U.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: U.primary.withValues(alpha: 0.3),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: Text(
-                    'BETA',
-                    style: GoogleFonts.robotoFlex(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: U.primary,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          )
-        : card;
+    final content = card;
 
     return content.animate().fadeIn(delay: delay.ms, duration: 400.ms).slideY(
           begin: 0.1,

@@ -4,7 +4,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../main.dart';
-import '../widgets/sciwordle_badge.dart';
 
 class HowToPlayScreen extends StatelessWidget {
   const HowToPlayScreen({super.key});
@@ -215,30 +214,6 @@ class HowToPlayScreen extends StatelessWidget {
                 ],
               ),
             ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
-
-            const SizedBox(height: 16),
-
-            // Titles System
-            _SectionCard(
-              title: 'Elite Titles',
-              icon: Icons.military_tech_rounded,
-              iconColor: const Color(0xFFA855F7),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Compete on the leaderboard to earn prestigious titles displayed next to your name:',
-                    style: GoogleFonts.robotoFlex(color: U.sub, fontSize: 13.5),
-                  ),
-                  const SizedBox(height: 12),
-                  _TitleRow(tag: 'ALPHA', desc: 'Rank #1 in score AND Rank #1 in streak simultaneously', color: const Color(0xFFEF4444)),
-                  _TitleRow(tag: 'PRIME', desc: 'Rank #1 on the all-time Total Score leaderboard', color: const Color(0xFFF59E0B)),
-                  _TitleRow(tag: 'FIRE', desc: 'Rank #1 in active consecutive streak', color: const Color(0xFFFB923C)),
-                  _TitleRow(tag: 'TOP 2', desc: 'Rank #2 in total score', color: const Color(0xFF38BDF8)),
-                  _TitleRow(tag: 'TOP 3', desc: 'Rank #3 in total score', color: const Color(0xFFC084FC)),
-                ],
-              ),
-            ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
 
             const SizedBox(height: 24),
 
@@ -481,41 +456,6 @@ class _BulletItem extends StatelessWidget {
                 color: U.sub,
                 fontSize: 13,
                 height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TitleRow extends StatelessWidget {
-  final String tag;
-  final String desc;
-  final Color color;
-
-  const _TitleRow({
-    required this.tag,
-    required this.desc,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SciwordleBadge(title: tag),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              desc,
-              style: GoogleFonts.robotoFlex(
-                color: U.sub,
-                fontSize: 12.5,
               ),
             ),
           ),

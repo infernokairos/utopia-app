@@ -286,23 +286,34 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                       child: Builder(
                         builder: (context) {
                           final isDark = appThemeNotifier.value.isDark;
+                          final dockBg = isDark
+                              ? const Color(0xFF0D0D0E).withValues(alpha: 0.90)
+                              : U.card.withValues(alpha: 0.94);
+                          final dockBorder = isDark
+                              ? const Color(0xFF27272A).withValues(alpha: 0.6)
+                              : U.border.withValues(alpha: 0.8);
+                          final dockShadow = isDark
+                              ? Colors.black.withValues(alpha: 0.40)
+                              : Colors.black.withValues(alpha: 0.08);
+
                           return ClipRRect(
                             borderRadius: M3Shapes.fullRadius,
                             child: BackdropFilter(
                               filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                              child: Container(
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
                                 height: 72,
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0D0D0E).withValues(alpha: 0.90),
+                                  color: dockBg,
                                   borderRadius: M3Shapes.fullRadius,
                                   border: Border.all(
-                                    color: const Color(0xFF27272A).withValues(alpha: 0.6),
+                                    color: dockBorder,
                                     width: 0.8,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.40),
+                                      color: dockShadow,
                                       blurRadius: 24,
                                       offset: const Offset(0, 8),
                                       spreadRadius: -2,
@@ -318,7 +329,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                                         activeIcon: Icons.home_rounded,
                                         label: 'Home',
                                         isActive: _index == 0,
-                                        isDark: true,
+                                        isDark: isDark,
                                         onTap: () => _setIndex(0),
                                       ),
                                     ),
@@ -328,7 +339,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                                         activeIcon: Icons.groups_rounded,
                                         label: 'People',
                                         isActive: _index == 1,
-                                        isDark: true,
+                                        isDark: isDark,
                                         onTap: () => _setIndex(1),
                                       ),
                                     ),
@@ -338,7 +349,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                                         activeIcon: Icons.school_rounded,
                                         label: 'Campus',
                                         isActive: _index == 2,
-                                        isDark: true,
+                                        isDark: isDark,
                                         onTap: () => _setIndex(2),
                                       ),
                                     ),
@@ -348,7 +359,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                                         activeIcon: Icons.person_rounded,
                                         label: 'Profile',
                                         isActive: _index == 3,
-                                        isDark: true,
+                                        isDark: isDark,
                                         onTap: () => _setIndex(3),
                                       ),
                                     ),
@@ -458,7 +469,7 @@ class _NavItem extends StatelessWidget {
                     key: ValueKey<bool>(isActive),
                     color: isActive
                         ? U.onPrimaryContainer
-                        : const Color(0xFF71717A),
+                        : U.sub,
                     size: 24,
                   ),
                 ),
@@ -473,7 +484,7 @@ class _NavItem extends StatelessWidget {
                 fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
                 color: isActive
                     ? U.text
-                    : const Color(0xFF71717A),
+                    : U.sub,
                 letterSpacing: 0.2,
               ),
               child: Text(label),

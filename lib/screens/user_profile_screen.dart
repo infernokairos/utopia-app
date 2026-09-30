@@ -10,13 +10,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../main.dart';
 import '../services/follow_service.dart';
 import '../services/people_interaction_service.dart';
-import '../theme/m3_expressive_theme.dart';
 import '../widgets/app_motion.dart';
 import '../widgets/social_badge.dart';
 import '../widgets/superuser_badge.dart';
 import '../widgets/thought_cloud_badge.dart';
-import '../widgets/sciwordle_badge.dart';
-import '../widgets/sciwordle_profile_card.dart';
+
 import '../models/project_model.dart';
 import '../services/project_service.dart';
 import 'project_detail_screen.dart';
@@ -445,11 +443,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           }
 
           final hasSocialLinks = instagramId.isNotEmpty || githubId.isNotEmpty || discordId.isNotEmpty;
-          final sciwordleTitle = (userData['sciwordleTitle'] ?? '').toString().trim();
-          final showSciwordleBadge = userData['showSciwordleBadge'] != false;
-          final sciwordleScore = (userData['sciwordleScore'] as num?)?.toInt() ?? 0;
-          final sciwordleStreak = (userData['sciwordleStreak'] as num?)?.toInt() ?? 0;
-          final sciwordleBestStreak = (userData['sciwordleBestStreak'] as num?)?.toInt() ?? 0;
+
 
           return CustomScrollView(
             physics: const BouncingScrollPhysics(),
@@ -481,7 +475,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               // ── Main Centered Body ──────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 80),
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 80),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -491,30 +485,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           clipBehavior: Clip.none,
                           alignment: Alignment.center,
                           children: [
-                            // Outer ring accent
                             Container(
-                              padding: const EdgeInsets.all(4),
+                              padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                                    ? LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          SciwordleBadge.getTitleThemeColor(sciwordleTitle),
-                                          SciwordleBadge.getTitleThemeColor(sciwordleTitle).withValues(alpha: 0.6),
-                                          SciwordleBadge.getTitleThemeColor(sciwordleTitle).withValues(alpha: 0.2),
-                                        ],
-                                      )
-                                    : LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          U.primary.withValues(alpha: 0.4),
-                                          U.peach.withValues(alpha: 0.25),
-                                          U.border,
-                                        ],
-                                      ),
+                                border: Border.all(
+                                  color: U.primary.withValues(alpha: 0.35),
+                                  width: 2.0,
+                                ),
                               ),
                               child: GestureDetector(
                                 onTap: () {
@@ -523,8 +501,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   }
                                 },
                                 child: CircleAvatar(
-                                  radius: 54,
-                                  backgroundColor: U.card,
+                                  radius: 52,
+                                  backgroundColor: U.primary.withValues(alpha: 0.08),
                                   backgroundImage: photoUrl != null && photoUrl.isNotEmpty
                                       ? CachedNetworkImageProvider(photoUrl)
                                       : null,
@@ -533,7 +511,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                           displayName.isEmpty ? 'U' : displayName[0].toUpperCase(),
                                           style: GoogleFonts.outfit(
                                             color: U.primary,
-                                            fontSize: 42,
+                                            fontSize: 38,
                                             fontWeight: FontWeight.w800,
                                           ),
                                         )
@@ -549,16 +527,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                 right: -8,
                                 child: ThoughtCloudBadge(
                                   vibe: vibe,
-                                  avatarRadius: 54,
-                                ),
-                              ),
-
-                            // SciWordle Title Badge on top of Hero Avatar
-                            if (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                              Positioned(
-                                top: -14,
-                                child: SciwordleBadge(
-                                  title: sciwordleTitle,
+                                  avatarRadius: 52,
                                 ),
                               ),
                           ],
@@ -597,104 +566,35 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         ],
                       ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.1, end: 0),
 
-                      // ── 3. Academic Subtitle Pills ───────────────────
+                      // ── 3. Academic Subtitle (plain text, no pills) ───
                       if (university.isNotEmpty || branch.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            if (university.isNotEmpty)
-                              Container(
-                                constraints: BoxConstraints(
-                                  maxWidth: MediaQuery.sizeOf(context).width - 64,
-                                ),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: U.surface,
-                                  borderRadius: M3Shapes.fullRadius,
-                                  border: Border.all(color: U.border, width: 0.8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.account_balance_rounded, size: 13, color: U.primary),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        university,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.outfit(
-                                          color: U.text,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            if (branch.isNotEmpty)
-                              Container(
-                                constraints: BoxConstraints(
-                                  maxWidth: MediaQuery.sizeOf(context).width - 64,
-                                ),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: U.primary.withValues(alpha: 0.10),
-                                  borderRadius: M3Shapes.fullRadius,
-                                  border: Border.all(
-                                    color: U.primary.withValues(alpha: 0.25),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.school_rounded, size: 13, color: U.primary),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        branch,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.outfit(
-                                          color: U.primary,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
+                        const SizedBox(height: 6),
+                        Text(
+                          [
+                            if (branch.isNotEmpty) branch,
+                            if (university.isNotEmpty) university,
+                          ].join(' · '),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            color: U.sub,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
 
-                      // ── 4. Bio Quote Card (Centered & Spacious) ──────
+                      // ── 4. Bio (plain text, no card) ──────────────────
                       if (bio.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        Container(
-                          width: double.infinity,
-                          constraints: const BoxConstraints(maxWidth: 440),
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                          decoration: BoxDecoration(
-                            color: U.card.withValues(alpha: 0.7),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: U.border.withValues(alpha: 0.6),
-                              width: 0.8,
-                            ),
-                          ),
+                        const SizedBox(height: 14),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 360),
                           child: Text(
                             bio,
                             textAlign: TextAlign.center,
                             style: GoogleFonts.outfit(
-                              color: U.text.withValues(alpha: 0.95),
+                              color: U.text.withValues(alpha: 0.75),
                               fontSize: 13.5,
                               height: 1.5,
                               fontWeight: FontWeight.w400,
@@ -703,7 +603,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         ),
                       ],
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 22),
 
                       // ── 5. Action Hub (Link, Message, Wave) ──────────
                       if (!_isOwnProfile)
@@ -763,10 +663,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           decoration: BoxDecoration(
                             color: U.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: U.primary.withValues(alpha: 0.22),
-                              width: 0.8,
-                            ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -785,133 +681,78 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           ),
                         ),
 
-                      const SizedBox(height: 20),
-
-                      // ── 6. Segmented Community Stats Card ────────────
+                      // ── 6. Community Stats (inline, no card) ──────────
+                      const SizedBox(height: 24),
                       StreamBuilder<int>(
                         stream: _followService.linksCountStream(widget.uid),
                         builder: (context, linksSnap) {
                           final linksCount = linksSnap.data ?? 0;
 
-                          return Container(
-                            constraints: const BoxConstraints(maxWidth: 440),
-                            decoration: BoxDecoration(
-                              color: U.card,
-                              borderRadius: M3Shapes.cardRadius,
-                              border: Border.all(color: U.border, width: 0.8),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                            child: Row(
-                              children: [
-                                // Links Stat
-                                Expanded(
-                                  child: _StatCardItem(
-                                    icon: Icons.link_rounded,
-                                    iconColor: U.primary,
-                                    count: linksCount,
-                                    label: 'Links',
-                                    onTap: () => _navigateToFollows(true, displayName),
-                                  ),
-                                ),
-
-                                Container(
-                                  height: 38,
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _InlineStat(
+                                count: linksCount,
+                                label: 'Links',
+                                onTap: () => _navigateToFollows(true, displayName),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                child: Container(
                                   width: 1,
-                                  color: U.border.withValues(alpha: 0.7),
+                                  height: 28,
+                                  color: U.border.withValues(alpha: 0.5),
                                 ),
-
-                                // Waves Stat
-                                Expanded(
-                                  child: _StatCardItem(
-                                    icon: Icons.waving_hand_rounded,
-                                    iconColor: U.peach,
-                                    count: wavesCount,
-                                    label: 'Waves Received',
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                              _InlineStat(
+                                count: wavesCount,
+                                label: 'Waves',
+                              ),
+                            ],
                           );
                         },
                       ),
 
-                      const SizedBox(height: 18),
+                      // ── Thin separator ──
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Divider(height: 1, thickness: 0.5, color: U.border.withValues(alpha: 0.4)),
+                      ),
 
-                      // ── 7. Academic Identity Card (Branch & Roll Number) ─
-                      if (branch.isNotEmpty || (rollNumber.isNotEmpty && (_isOwnProfile || showRollNumber)))
-                        Container(
-                          constraints: const BoxConstraints(maxWidth: 440),
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: U.card,
-                            borderRadius: M3Shapes.cardRadius,
-                            border: Border.all(color: U.border, width: 0.8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.badge_outlined, size: 17, color: U.primary),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'ACADEMIC IDENTITY',
-                                    style: GoogleFonts.outfit(
-                                      color: U.primary,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 1.1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
-                              if (branch.isNotEmpty)
-                                _AcademicInfoRow(
-                                  icon: Icons.school_outlined,
-                                  label: 'Branch / Department',
-                                  value: branch,
-                                ),
-                              if (rollNumber.isNotEmpty && (_isOwnProfile || showRollNumber)) ...[
-                                if (branch.isNotEmpty) const Divider(height: 20, thickness: 0.6),
-                                _AcademicInfoRow(
-                                  icon: Icons.numbers_rounded,
-                                  label: 'Student Roll / ID',
-                                  value: _isOwnProfile && !showRollNumber
-                                      ? '$rollNumber (Hidden publicly)'
-                                      : rollNumber,
-                                ),
-                              ],
-                            ],
-                          ),
+                      // ── 7. Academic Identity (flat rows, no card) ─────
+                      if (branch.isNotEmpty || (rollNumber.isNotEmpty && (_isOwnProfile || showRollNumber))) ...[
+                        _FlatInfoRow(
+                          icon: Icons.school_outlined,
+                          label: 'Branch',
+                          value: branch,
                         ),
-
-                      const SizedBox(height: 18),
+                        if (rollNumber.isNotEmpty && (_isOwnProfile || showRollNumber))
+                          _FlatInfoRow(
+                            icon: Icons.numbers_rounded,
+                            label: 'Roll Number',
+                            value: _isOwnProfile && !showRollNumber
+                                ? '$rollNumber (Hidden)'
+                                : rollNumber,
+                          ),
+                        const SizedBox(height: 8),
+                      ],
 
                       // ── 7.8. Projects Showcase Section ──
                       _UserProjectsProfileSection(userId: widget.uid, isOwnProfile: _isOwnProfile),
 
-                      // ── 8. Active Campus Vibe Card (if active) ───────
+                      // ── 8. Active Campus Vibe (accent left-border strip) ──
                       if (vibe != null) ...[
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 20),
                         Container(
                           constraints: const BoxConstraints(maxWidth: 440),
                           width: double.infinity,
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                U.primary.withValues(alpha: 0.10),
-                                U.card,
-                              ],
-                            ),
-                            borderRadius: M3Shapes.cardRadius,
-                            border: Border.all(
-                              color: U.primary.withValues(alpha: 0.25),
-                              width: 0.8,
+                            border: Border(
+                              left: BorderSide(
+                                color: U.primary.withValues(alpha: 0.6),
+                                width: 3,
+                              ),
                             ),
                           ),
                           child: Column(
@@ -919,45 +760,33 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Text(vibe.emoji, style: const TextStyle(fontSize: 22)),
+                                  Text(vibe.emoji, style: const TextStyle(fontSize: 18)),
                                   const SizedBox(width: 8),
                                   Text(
                                     'CAMPUS VIBE',
                                     style: GoogleFonts.outfit(
-                                      color: U.primary,
-                                      fontSize: 11,
+                                      color: U.sub,
+                                      fontSize: 10.5,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 1.1,
                                     ),
                                   ),
                                   const Spacer(),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    width: 6,
+                                    height: 6,
                                     decoration: BoxDecoration(
-                                      color: U.teal.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(10),
+                                      shape: BoxShape.circle,
+                                      color: U.teal,
                                     ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          width: 6,
-                                          height: 6,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: U.teal,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Live',
-                                          style: GoogleFonts.outfit(
-                                            color: U.teal,
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Live',
+                                    style: GoogleFonts.outfit(
+                                      color: U.teal,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ],
@@ -965,7 +794,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               if (vibe.text.isNotEmpty) ...[
                                 const SizedBox(height: 10),
                                 Text(
-                                  '“${vibe.text}”',
+                                  '"${vibe.text}"',
                                   style: GoogleFonts.outfit(
                                     color: U.text,
                                     fontSize: 14,
@@ -975,50 +804,34 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                 ),
                               ],
                               if (vibe.location != null || vibe.statusTag != null) ...[
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 8),
                                 Wrap(
-                                  spacing: 6,
+                                  spacing: 10,
                                   runSpacing: 6,
                                   children: [
                                     if (vibe.location != null)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                                        decoration: BoxDecoration(
-                                          color: U.bg.withValues(alpha: 0.7),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: U.border, width: 0.6),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.place_outlined, size: 11, color: U.sub),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              vibe.location!,
-                                              style: GoogleFonts.outfit(
-                                                color: U.sub,
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w500,
-                                              ),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.place_outlined, size: 12, color: U.sub),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            vibe.location!,
+                                            style: GoogleFonts.outfit(
+                                              color: U.sub,
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w500,
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
                                     if (vibe.statusTag != null)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                                        decoration: BoxDecoration(
-                                          color: U.bg.withValues(alpha: 0.7),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: U.border, width: 0.6),
-                                        ),
-                                        child: Text(
-                                          vibe.statusTag!,
-                                          style: GoogleFonts.outfit(
-                                            color: U.text,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                      Text(
+                                        vibe.statusTag!,
+                                        style: GoogleFonts.outfit(
+                                          color: U.sub,
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                   ],
@@ -1029,63 +842,37 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         ),
                       ],
 
-                      // ── 9. Profile Links & Socials Section ───────────
+                      // ── 9. Social Badges (flat, no card) ──────────────
                       if (hasSocialLinks) ...[
-                        const SizedBox(height: 18),
-                        Container(
-                          constraints: const BoxConstraints(maxWidth: 440),
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: U.card,
-                            borderRadius: M3Shapes.cardRadius,
-                            border: Border.all(color: U.border, width: 0.8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.alternate_email_rounded, size: 15, color: U.primary),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'SOCIAL & PROFILES',
-                                    style: GoogleFonts.outfit(
-                                      color: U.primary,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 1.1,
-                                    ),
-                                  ),
-                                ],
+                        const SizedBox(height: 20),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Text(
+                              'SOCIALS',
+                              style: GoogleFonts.outfit(
+                                color: U.dim,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.1,
                               ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  if (instagramId.isNotEmpty)
-                                    InstagramBadge(handle: instagramId),
-                                  if (githubId.isNotEmpty)
-                                    GithubBadge(handle: githubId),
-                                  if (discordId.isNotEmpty)
-                                    DiscordBadge(handle: discordId),
-                                ],
-                              ),
-                            ],
+                            ),
                           ),
                         ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (instagramId.isNotEmpty)
+                              InstagramBadge(handle: instagramId),
+                            if (githubId.isNotEmpty)
+                              GithubBadge(handle: githubId),
+                            if (discordId.isNotEmpty)
+                              DiscordBadge(handle: discordId),
+                          ],
+                        ),
                       ],
-
-                      // ── 10. SciWordle League Performance Card (Collapsed by default, at the bottom) ──
-                      const SizedBox(height: 18),
-                      SciwordleProfileCard(
-                        uid: widget.uid,
-                        initialScore: sciwordleScore,
-                        initialStreak: sciwordleStreak,
-                        initialBestStreak: sciwordleBestStreak,
-                        initialTitle: sciwordleTitle,
-                      ),
                     ],
                   ),
                 ),
@@ -1100,69 +887,108 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
 // ─── Sub-widgets ─────────────────────────────────────────────────────────────
 
-class _StatCardItem extends StatelessWidget {
-  const _StatCardItem({
-    required this.icon,
-    required this.iconColor,
+/// Inline stat — just a number + label, no card
+class _InlineStat extends StatelessWidget {
+  final int count;
+  final String label;
+  final VoidCallback? onTap;
+
+  const _InlineStat({
     required this.count,
     required this.label,
     this.onTap,
   });
 
-  final IconData icon;
-  final Color iconColor;
-  final int count;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final displayValue = _formatCount(count);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 16, color: iconColor),
-                const SizedBox(width: 6),
-                Text(
-                  displayValue,
-                  style: GoogleFonts.outfit(
-                    color: U.text,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: GoogleFonts.outfit(
-                color: U.sub,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatCount(int n) {
+  String _fmt(int n) {
     if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
     return '$n';
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _fmt(count),
+            style: GoogleFonts.outfit(
+              color: U.text,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              color: U.sub,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+/// Flat label → value row with hairline divider below
+class _FlatInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _FlatInfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: U.sub),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: GoogleFonts.outfit(
+                  color: U.sub,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              Flexible(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.outfit(
+                    color: U.text,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Divider(height: 1, thickness: 0.4, color: U.border.withValues(alpha: 0.3)),
+      ],
+    );
+  }
+}
+
 
 class _LinkActionButton extends StatelessWidget {
   const _LinkActionButton({
@@ -1372,68 +1198,6 @@ class _WaveActionButton extends StatelessWidget {
   }
 }
 
-class _AcademicInfoRow extends StatelessWidget {
-  const _AcademicInfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.trailing,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: U.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 18, color: U.primary),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.outfit(
-                  color: U.sub,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: GoogleFonts.outfit(
-                  color: U.text,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (trailing != null) ...[
-          const SizedBox(width: 8),
-          trailing!,
-        ],
-      ],
-    );
-  }
-}
 
 /// Profile Section displaying projects authored or contributed to by this user.
 class _UserProjectsProfileSection extends StatefulWidget {
@@ -1455,7 +1219,6 @@ class _UserProjectsProfileSectionState extends State<_UserProjectsProfileSection
   @override
   void initState() {
     super.initState();
-    // Public view is expanded by default (!isOwnProfile), own profile is collapsed by default
     _isExpanded = !widget.isOwnProfile;
   }
 
@@ -1472,303 +1235,278 @@ class _UserProjectsProfileSectionState extends State<_UserProjectsProfileSection
           return const SizedBox.shrink();
         }
 
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          constraints: const BoxConstraints(maxWidth: 440),
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: U.card,
-            borderRadius: M3Shapes.cardRadius,
-            border: Border.all(color: U.border, width: 0.8),
-          ),
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header (Tappable to Expand / Collapse)
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _isExpanded = !_isExpanded;
-                  });
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: U.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.rocket_launch_rounded, color: U.primary, size: 16),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Section header — flat, no card ──
+            GestureDetector(
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.rocket_launch_rounded, color: U.dim, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      'PROJECTS',
+                      style: GoogleFonts.outfit(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                        color: U.dim,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
+                    ),
+                    if (projects.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        '${projects.length}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: U.sub,
+                        ),
+                      ),
+                    ],
+                    const Spacer(),
+                    if (widget.isOwnProfile)
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const CreateProjectScreen()),
+                          );
+                        },
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Flexible(
-                              child: Text(
-                                'PROJECTS',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.1,
-                                  color: U.primary,
-                                ),
+                            Icon(Icons.add_rounded, size: 14, color: U.primary),
+                            const SizedBox(width: 2),
+                            Text(
+                              'Add',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: U.primary,
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                              decoration: BoxDecoration(
-                                color: U.primary.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: U.primary.withValues(alpha: 0.28),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Text(
-                                'BETA',
-                                style: GoogleFonts.robotoFlex(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w800,
-                                  color: U.primary,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                            if (projects.isNotEmpty) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                decoration: BoxDecoration(
-                                  color: U.primary.withValues(alpha: 0.14),
-                                  borderRadius: M3Shapes.fullRadius,
-                                ),
-                                child: Text(
-                                  '${projects.length}',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: U.primary,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      if (widget.isOwnProfile)
-                        TextButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const CreateProjectScreen()),
-                            );
-                          },
-                          icon: const Icon(Icons.add_rounded, size: 15),
-                          label: const Text('Add'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: U.primary,
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            textStyle: GoogleFonts.outfit(fontSize: 11.5, fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      const SizedBox(width: 4),
-                      // Expand/Collapse Chevron Icon
-                      Icon(
-                        _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                        color: U.primary,
-                        size: 22,
+                    const SizedBox(width: 8),
+                    AnimatedRotation(
+                      turns: _isExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: U.dim,
+                        size: 20,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+            ),
 
-              if (_isExpanded) ...[
-                const SizedBox(height: 14),
-
-                if (projects.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: U.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: U.outlineVariant.withValues(alpha: 0.25),
-                        width: 0.8,
+            // ── Content ──
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: projects.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: Text(
+                            'No projects showcased yet',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              color: U.sub,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          for (int i = 0; i < projects.length; i++) ...[
+                            _buildProjectItem(projects[i]),
+                            if (i < projects.length - 1)
+                              Divider(
+                                height: 1,
+                                thickness: 0.4,
+                                color: U.border.withValues(alpha: 0.3),
+                              ),
+                          ],
+                        ],
                       ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(Icons.lightbulb_outline_rounded, size: 28, color: U.sub),
-                        const SizedBox(height: 6),
-                        Text(
-                          'No projects showcased yet',
-                          style: GoogleFonts.outfit(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                            color: U.text,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Publish your academic projects, hackathons, or apps to get recognized.',
-                          style: GoogleFonts.outfit(fontSize: 12, color: U.sub),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: projects.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      final p = projects[index];
-                      final isOwner = p.ownerId == widget.userId;
-                      final role = isOwner
-                          ? 'Owner & Lead'
-                          : (p.contributors.firstWhere(
-                              (c) => c.userId == widget.userId,
-                              orElse: () => ProjectContributor(userId: widget.userId, name: '', role: 'Contributor'),
-                            ).role ?? 'Contributor');
+              ),
+              crossFadeState: _isExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 200),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-                      return InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ProjectDetailScreen(projectId: p.id, initialProject: p),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: U.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: U.border.withValues(alpha: 0.5),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              // Thumbnail
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Container(
-                                  width: 56,
-                                  height: 56,
-                                  color: U.surfaceContainerHighest,
-                                  child: p.coverImage.isNotEmpty
-                                      ? CachedNetworkImage(
-                                          imageUrl: p.coverImage,
-                                          fit: BoxFit.cover,
-                                          placeholder: (context, url) => Center(
-                                            child: SizedBox(
-                                              width: 16,
-                                              height: 16,
-                                              child: CircularProgressIndicator(strokeWidth: 2, color: U.primary),
-                                            ),
-                                          ),
-                                          errorWidget: (context, url, error) => Icon(Icons.code_rounded, color: U.sub, size: 24),
-                                        )
-                                      : Icon(Icons.palette_outlined, color: U.sub, size: 24),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      p.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: U.text,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Wrap(
-                                      spacing: 6,
-                                      runSpacing: 4,
-                                      crossAxisAlignment: WrapCrossAlignment.center,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: isOwner
-                                                ? U.primary.withValues(alpha: 0.12)
-                                                : U.peach.withValues(alpha: 0.12),
-                                            borderRadius: M3Shapes.fullRadius,
-                                          ),
-                                          child: Text(
-                                            role,
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: isOwner ? U.primary : U.peach,
-                                            ),
-                                          ),
-                                        ),
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.schedule_rounded, size: 11, color: U.sub),
-                                            const SizedBox(width: 3),
-                                            Text(
-                                              p.relativeTime,
-                                              style: GoogleFonts.outfit(fontSize: 10.5, color: U.sub, fontWeight: FontWeight.w500),
-                                            ),
-                                          ],
-                                        ),
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.favorite_rounded, size: 12, color: U.red),
-                                            const SizedBox(width: 3),
-                                            Text(
-                                              '${p.likesCount}',
-                                              style: GoogleFonts.outfit(fontSize: 11, color: U.sub, fontWeight: FontWeight.w600),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(Icons.arrow_forward_ios_rounded, size: 12, color: U.dim),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ],
+  Widget _buildProjectItem(ProjectModel p) {
+    final isOwner = p.ownerId == widget.userId;
+    final role = isOwner
+        ? 'Owner'
+        : (p.contributors.firstWhere(
+            (c) => c.userId == widget.userId,
+            orElse: () => ProjectContributor(
+              userId: widget.userId,
+              name: '',
+              role: 'Contributor',
+            ),
+          ).role ?? 'Contributor');
+
+    return M3Pressable(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ProjectDetailScreen(projectId: p.id, initialProject: p),
           ),
         );
       },
+      scaleFactor: 0.98,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cover thumbnail
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                width: 52,
+                height: 52,
+                color: U.primary.withValues(alpha: 0.06),
+                child: p.coverImage.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: p.coverImage,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Center(
+                          child: SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 1.5,
+                              color: U.primary,
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) =>
+                            Icon(Icons.code_rounded, color: U.sub, size: 22),
+                      )
+                    : Icon(Icons.palette_outlined, color: U.sub, size: 22),
+              ),
+            ),
+            const SizedBox(width: 14),
+
+            // Text content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Text(
+                    p.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: U.text,
+                    ),
+                  ),
+
+                  // Tagline
+                  if (p.tagline.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      p.tagline,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        color: U.sub,
+                        fontWeight: FontWeight.w400,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 6),
+
+                  // Metadata row: category · role · likes
+                  Row(
+                    children: [
+                      // Category
+                      Text(
+                        p.category.label,
+                        style: GoogleFonts.outfit(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: U.primary,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          '·',
+                          style: TextStyle(color: U.dim, fontSize: 10),
+                        ),
+                      ),
+                      // Role
+                      Text(
+                        role,
+                        style: GoogleFonts.outfit(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: isOwner ? U.text : U.sub,
+                        ),
+                      ),
+                      if (p.likesCount > 0) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Text(
+                            '·',
+                            style: TextStyle(color: U.dim, fontSize: 10),
+                          ),
+                        ),
+                        Icon(Icons.favorite_rounded, size: 11, color: U.red),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${p.likesCount}',
+                          style: GoogleFonts.outfit(
+                            fontSize: 10.5,
+                            color: U.sub,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Chevron
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 11,
+                color: U.dim,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

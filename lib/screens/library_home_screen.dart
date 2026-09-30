@@ -352,7 +352,6 @@ class _LibraryHomeScreenState extends State<LibraryHomeScreen> {
       color: const Color(0xFF10B981),
       topRightBracket: true,
       showTriangle: true,
-      showBetaBadge: true,
       backgroundShape: Icon(
         Icons.science_rounded,
         size: 100,
@@ -673,7 +672,6 @@ class _LibraryHomeScreenState extends State<LibraryHomeScreen> {
     Widget? backgroundShape,
     bool showPin = false,
     bool showTriangle = false,
-    bool showBetaBadge = false,
   }) {
     final theme = appThemeNotifier.value;
     final isDark = theme.isDark;
@@ -771,31 +769,7 @@ class _LibraryHomeScreenState extends State<LibraryHomeScreen> {
               right: 14,
               child: Icon(Icons.push_pin_rounded, size: 14, color: U.primary),
             ),
-          if (showBetaBadge)
-            Positioned(
-              top: 10,
-              right: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                decoration: BoxDecoration(
-                  color: U.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: U.primary.withValues(alpha: 0.3),
-                    width: 0.8,
-                  ),
-                ),
-                child: Text(
-                  'BETA',
-                  style: GoogleFonts.robotoFlex(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    color: U.primary,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ),
+
         ],
       ),
     );

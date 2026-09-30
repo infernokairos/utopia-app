@@ -23,8 +23,6 @@ import '../services/role_service.dart';
 import '../widgets/instagram_badge.dart';
 import '../widgets/superuser_badge.dart';
 import '../widgets/wave_count_badge.dart';
-import '../widgets/sciwordle_badge.dart';
-import '../widgets/sciwordle_profile_card.dart';
 import '../models/project_model.dart';
 import '../services/project_service.dart';
 import 'create_project_screen.dart';
@@ -277,7 +275,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = appThemeNotifier.value;
-    final isDark = theme.isDark;
     final user = FirebaseAuth.instance.currentUser;
     final userDocStream = user == null
         ? null
@@ -307,372 +304,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? rawPhotoUrl
                 : user?.photoURL;
             final email = user?.email ?? '';
-            final sciwordleTitle = (userData['sciwordleTitle'] ?? '').toString().trim();
-            final showSciwordleBadge = userData['showSciwordleBadge'] != false;
-            final sciwordleScore = (userData['sciwordleScore'] as num?)?.toInt() ?? 0;
-            final sciwordleStreak = (userData['sciwordleStreak'] as num?)?.toInt() ?? 0;
-            final sciwordleBestStreak = (userData['sciwordleBestStreak'] as num?)?.toInt() ?? 0;
 
             return ListView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 140),
               children: [
-                // Top App Bar
+                // ── Top Nav Row ──
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     if (Navigator.canPop(context))
-                      IconButton.filledTonal(
-                        icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                        onPressed: () => Navigator.pop(context),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Icon(Icons.arrow_back_rounded, size: 22, color: U.text),
                       )
                     else
-                      const SizedBox(width: 40),
-                    IconButton.filledTonal(
-                      icon: const Icon(Icons.share_outlined, size: 20),
-                      tooltip: 'Share UTOPIA',
-                      onPressed: () {
-                        SharePlus.instance.share(
-                          ShareParams(
-                            text: 'Join me on UTOPIA! 🚀 The academic productivity platform.\n\nhttps://inferalis.space/download-utopia',
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Header Title
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ACCOUNT',
-                      style: GoogleFonts.robotoFlex(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                        color: theme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Profile',
-                      style: GoogleFonts.robotoFlex(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: theme.text,
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Manage your academic identity & preferences',
-                      style: GoogleFonts.robotoFlex(
-                        color: U.sub,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ],
-                ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.06, end: 0),
-                const SizedBox(height: 20),
-
-                // ── Material 3 Expressive Profile Hero Card ──
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: U.surfaceContainer,
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(
-                          color: U.outlineVariant.withValues(alpha: isDark ? 0.35 : 0.5),
-                          width: 0.8,
-                        ),
-                      ),
-                      padding: const EdgeInsets.all(22),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                      // Avatar
-                      Stack(
-                        clipBehavior: Clip.none,
-                        alignment: Alignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(3.5),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                                    ? SciwordleBadge.getTitleThemeColor(sciwordleTitle)
-                                    : theme.primary.withValues(alpha: 0.45),
-                                width: (showSciwordleBadge && sciwordleTitle.isNotEmpty) ? 2.8 : 2.0,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 44,
-                              backgroundColor: theme.primary.withValues(alpha: 0.12),
-                              backgroundImage: displayPhotoUrl != null && displayPhotoUrl.isNotEmpty
-                                  ? CachedNetworkImageProvider(displayPhotoUrl)
-                                  : null,
-                              child: (displayPhotoUrl == null || displayPhotoUrl.isEmpty)
-                                  ? Text(
-                                      (displayName.isNotEmpty ? displayName[0] : 'U').toUpperCase(),
-                                      style: GoogleFonts.robotoFlex(
-                                        color: theme.primary,
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                          ),
-                          if (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                            Positioned(
-                              top: -14,
-                              child: SciwordleBadge(
-                                title: sciwordleTitle,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Name + Verified Superuser
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              displayName,
-                              style: GoogleFonts.robotoFlex(
-                                color: U.text,
-                                fontSize: 21,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.3,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (_isSuperUser) ...[
-                            const SizedBox(width: 6),
-                            const SuperUserBadge(size: 18),
-                          ],
-                        ],
-                      ),
-
-                      // Email Pill
-                      if (email.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        GestureDetector(
-                          onTap: () {
-                            Clipboard.setData(ClipboardData(text: email));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                backgroundColor: U.surfaceContainerHigh,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                duration: const Duration(milliseconds: 1500),
-                                content: Text(
-                                  'Email copied to clipboard',
-                                  style: GoogleFonts.robotoFlex(color: U.text, fontSize: 12.5),
-                                ),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: U.surfaceContainerLowest.withValues(alpha: 0.7),
-                              borderRadius: M3Shapes.fullRadius,
-                              border: Border.all(
-                                color: U.outlineVariant.withValues(alpha: 0.35),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.mail_outline_rounded, size: 12, color: U.sub),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    email,
-                                    style: GoogleFonts.robotoFlex(
-                                      color: U.sub,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-
-                      // Bio
-                      if (bio.isNotEmpty) ...[
-                        const SizedBox(height: 14),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: U.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: U.outlineVariant.withValues(alpha: 0.3),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Text(
-                            bio,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.robotoFlex(
-                              color: U.text.withValues(alpha: 0.9),
-                              fontSize: 12.5,
-                              height: 1.45,
-                            ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-
-                      // Badges Wrap (Branch, Instagram, GitHub, Discord, Waves, Roll)
-                      if (branch.isNotEmpty ||
-                          instagramId.isNotEmpty ||
-                          githubId.isNotEmpty ||
-                          discordId.isNotEmpty ||
-                          wavesCount > 0 ||
-                          rollNumber.isNotEmpty) ...[
-                        const SizedBox(height: 14),
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            if (branch.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: theme.primary.withValues(alpha: 0.12),
-                                  borderRadius: M3Shapes.fullRadius,
-                                  border: Border.all(
-                                    color: theme.primary.withValues(alpha: 0.3),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.school_rounded, size: 13, color: theme.primary),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      branch,
-                                      style: GoogleFonts.robotoFlex(
-                                        color: theme.primary,
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            if (rollNumber.isNotEmpty && showRollNumber)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: U.surfaceContainerHighest,
-                                  borderRadius: M3Shapes.fullRadius,
-                                  border: Border.all(
-                                    color: U.outlineVariant.withValues(alpha: 0.4),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.badge_outlined, size: 13, color: U.sub),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      rollNumber,
-                                      style: GoogleFonts.robotoFlex(
-                                        color: U.text,
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            if (instagramId.isNotEmpty)
-                              InstagramBadge(handle: instagramId),
-                            if (githubId.isNotEmpty)
-                              GithubBadge(handle: githubId),
-                            if (discordId.isNotEmpty)
-                              DiscordBadge(handle: discordId),
-                            WaveCountBadge(count: wavesCount),
-                          ],
-                        ),
-                      ],
-
-                      const SizedBox(height: 18),
-
-                      // Edit Profile Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.tonalIcon(
-                          onPressed: () => _openEditProfile(
-                            name: displayName,
-                            bio: bio,
-                            instagram: instagramId,
-                            github: githubId,
-                            discord: discordId,
-                            branch: branch,
-                            rollNumber: rollNumber,
-                            photoUrl: displayPhotoUrl,
-                          ),
-                          icon: Icon(Icons.edit_rounded, size: 16, color: theme.primary),
-                          label: Text(
-                            'Edit Profile',
-                            style: GoogleFonts.robotoFlex(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                              color: theme.primary,
-                            ),
-                          ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: theme.primary.withValues(alpha: 0.12),
-                            foregroundColor: theme.primary,
-                            shape: RoundedRectangleBorder(borderRadius: M3Shapes.fullRadius),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            elevation: 0,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Positioned(
-                    top: 14,
-                    right: 14,
-                    child: Material(
-                      color: U.surfaceContainerLowest.withValues(alpha: 0.8),
-                      shape: const CircleBorder(),
-                      child: Tooltip(
-                        message: 'View live profile',
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: () {
-                            if (user != null) {
+                      const SizedBox(width: 22),
+                    Row(
+                      children: [
+                        // View live profile
+                        if (user != null)
+                          GestureDetector(
+                            onTap: () {
                               Navigator.of(context).push(
                                 buildForwardRoute(
                                   UserProfileScreen(
@@ -683,129 +336,297 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 ),
                               );
-                            }
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Icon(
-                              Icons.arrow_outward_rounded,
-                              size: 18,
-                              color: theme.primary,
-                            ),
+                            },
+                            child: Icon(Icons.arrow_outward_rounded, size: 20, color: U.sub),
                           ),
+                        const SizedBox(width: 16),
+                        GestureDetector(
+                          onTap: () {
+                            SharePlus.instance.share(
+                              ShareParams(
+                                text: 'Join me on UTOPIA! 🚀 The academic productivity platform.\n\nhttps://inferalis.space/download-utopia',
+                              ),
+                            );
+                          },
+                          child: Icon(Icons.ios_share_rounded, size: 20, color: U.sub),
                         ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+
+                // ── Avatar ── (centered, clean, no card)
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.primary.withValues(alpha: 0.35),
+                        width: 2.0,
                       ),
                     ),
+                    child: CircleAvatar(
+                      radius: 48,
+                      backgroundColor: theme.primary.withValues(alpha: 0.08),
+                      backgroundImage: displayPhotoUrl != null && displayPhotoUrl.isNotEmpty
+                          ? CachedNetworkImageProvider(displayPhotoUrl)
+                          : null,
+                      child: (displayPhotoUrl == null || displayPhotoUrl.isEmpty)
+                          ? Text(
+                              (displayName.isNotEmpty ? displayName[0] : 'U').toUpperCase(),
+                              style: GoogleFonts.robotoFlex(
+                                color: theme.primary,
+                                fontSize: 34,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            )
+                          : null,
+                    ),
                   ),
-                ],
-              ).animate().fadeIn(delay: 80.ms, duration: 350.ms),
+                ).animate().fadeIn(duration: 400.ms).scale(begin: const Offset(0.92, 0.92), end: const Offset(1, 1), duration: 400.ms, curve: Curves.easeOutBack),
                 const SizedBox(height: 16),
+
+                // ── Name + Superuser badge ──
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          displayName,
+                          style: GoogleFonts.robotoFlex(
+                            color: U.text,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (_isSuperUser) ...[
+                        const SizedBox(width: 6),
+                        const SuperUserBadge(size: 18),
+                      ],
+                    ],
+                  ),
+                ).animate().fadeIn(delay: 60.ms, duration: 350.ms),
+
+                // ── Email (plain text, tappable) ──
+                if (email.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: email));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: U.surfaceContainerHigh,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            duration: const Duration(milliseconds: 1500),
+                            content: Text(
+                              'Email copied to clipboard',
+                              style: GoogleFonts.robotoFlex(color: U.text, fontSize: 12.5),
+                            ),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        email,
+                        style: GoogleFonts.robotoFlex(
+                          color: U.sub,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 100.ms, duration: 350.ms),
+                ],
+
+                // ── Bio (plain text, no container) ──
+                if (bio.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 320),
+                      child: Text(
+                        bio,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.robotoFlex(
+                          color: U.text.withValues(alpha: 0.75),
+                          fontSize: 13,
+                          height: 1.5,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 120.ms, duration: 350.ms),
+                ],
+
+                // ── Badges (branch, socials, waves, roll) ──
+                if (branch.isNotEmpty ||
+                    instagramId.isNotEmpty ||
+                    githubId.isNotEmpty ||
+                    discordId.isNotEmpty ||
+                    wavesCount > 0 ||
+                    (rollNumber.isNotEmpty && showRollNumber)) ...[
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (branch.isNotEmpty)
+                          _FlatChip(
+                            icon: Icons.school_rounded,
+                            label: branch,
+                            color: theme.primary,
+                          ),
+                        if (rollNumber.isNotEmpty && showRollNumber)
+                          _FlatChip(
+                            icon: Icons.badge_outlined,
+                            label: rollNumber,
+                            color: U.sub,
+                          ),
+                        if (instagramId.isNotEmpty)
+                          InstagramBadge(handle: instagramId),
+                        if (githubId.isNotEmpty)
+                          GithubBadge(handle: githubId),
+                        if (discordId.isNotEmpty)
+                          DiscordBadge(handle: discordId),
+                        WaveCountBadge(count: wavesCount),
+                      ],
+                    ),
+                  ).animate().fadeIn(delay: 160.ms, duration: 350.ms),
+                ],
+
+                // ── Edit Profile Button ──
+                const SizedBox(height: 22),
+                Center(
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => _openEditProfile(
+                      name: displayName,
+                      bio: bio,
+                      instagram: instagramId,
+                      github: githubId,
+                      discord: discordId,
+                      branch: branch,
+                      rollNumber: rollNumber,
+                      photoUrl: displayPhotoUrl,
+                    ),
+                    icon: Icon(Icons.edit_rounded, size: 15, color: theme.primary),
+                    label: Text(
+                      'Edit Profile',
+                      style: GoogleFonts.robotoFlex(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: theme.primary,
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.primary.withValues(alpha: 0.10),
+                      foregroundColor: theme.primary,
+                      shape: RoundedRectangleBorder(borderRadius: M3Shapes.fullRadius),
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                      elevation: 0,
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 200.ms, duration: 350.ms),
+
+                // ── Thin separator ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 28),
+                  child: Divider(height: 1, thickness: 0.5, color: U.outlineVariant.withValues(alpha: 0.3)),
+                ),
 
                 // ── Projects Showcase Section ──
                 _UserProjectsProfileSection(userId: user?.uid ?? ''),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
 
-                // ── SciWordle League Performance Card (Collapsed by default) ──
-                if (user != null) ...[
-                  SciwordleProfileCard(
-                    uid: user.uid,
-                    initialScore: sciwordleScore,
-                    initialStreak: sciwordleStreak,
-                    initialBestStreak: sciwordleBestStreak,
-                    initialTitle: sciwordleTitle,
-                  ),
-                  const SizedBox(height: 16),
-                ],
 
-                // ── Grouped Settings Menu (Simple, Single Section) ──
-                Container(
-                  decoration: BoxDecoration(
-                    color: U.surfaceContainer,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: U.outlineVariant.withValues(alpha: isDark ? 0.35 : 0.5),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      _SettingsTile(
-                        icon: Icons.palette_rounded,
-                        color: theme.peach,
-                        title: 'App Themes & Colors',
-                        subtitle: _updatingTheme
-                            ? 'Updating theme...'
-                            : '${U.themeForKey(U.currentThemeKey).label} (${isDark ? 'Dark' : 'Light'})',
-                        onTap: _selectThemeStyle,
-                      ),
-                      Divider(height: 1, thickness: 0.5, color: U.outlineVariant.withValues(alpha: 0.35)),
-                      _SettingsTile(
-                        icon: Icons.school_rounded,
-                        color: theme.blue,
-                        title: 'University Campus',
-                        subtitle: U.cachedUniversityName.isNotEmpty
-                            ? U.cachedUniversityName
-                            : 'Choose your campus',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const UniversitySelectionScreen(),
-                          ),
-                        ),
-                      ),
-                      Divider(height: 1, thickness: 0.5, color: U.outlineVariant.withValues(alpha: 0.35)),
-                      _SettingsTile(
-                        icon: Icons.rocket_launch_rounded,
-                        color: theme.lavender,
-                        title: 'About UTOPIA',
-                        subtitle: 'Platform info and releases',
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => UtopiaSectionScreen(
-                              initialIsSuperUser: _isSuperUser,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Divider(height: 1, thickness: 0.5, color: U.outlineVariant.withValues(alpha: 0.35)),
-                      _SettingsTile(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        color: theme.teal,
-                        title: 'Feedback & Support',
-                        subtitle: 'Report a bug or request features',
-                        onTap: _openRaiseIssue,
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(delay: 140.ms, duration: 350.ms),
-                const SizedBox(height: 24),
+                // ── Thin separator before settings ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Divider(height: 1, thickness: 0.5, color: U.outlineVariant.withValues(alpha: 0.3)),
+                ),
 
-                // Sign Out
-                Center(
-                  child: OutlinedButton.icon(
-                    onPressed: _showSignOutDialog,
-                    icon: Icon(Icons.logout_rounded, size: 16, color: U.red),
-                    label: Text(
-                      'Sign Out',
-                      style: GoogleFonts.robotoFlex(
-                        color: U.red,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: U.red.withValues(alpha: 0.35), width: 0.8),
-                      shape: RoundedRectangleBorder(borderRadius: M3Shapes.fullRadius),
-                      backgroundColor: U.red.withValues(alpha: 0.06),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                // ── Settings (flat list, no card wrapper) ──
+                _FlatSettingsRow(
+                  icon: Icons.palette_rounded,
+                  color: theme.peach,
+                  title: 'Themes & Colors',
+                  value: _updatingTheme
+                      ? 'Updating...'
+                      : U.themeForKey(U.currentThemeKey).label,
+                  onTap: _selectThemeStyle,
+                ),
+                _FlatSettingsRow(
+                  icon: Icons.school_rounded,
+                  color: theme.blue,
+                  title: 'University Campus',
+                  value: U.cachedUniversityName.isNotEmpty
+                      ? U.cachedUniversityName
+                      : 'Choose campus',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const UniversitySelectionScreen(),
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                _FlatSettingsRow(
+                  icon: Icons.rocket_launch_rounded,
+                  color: theme.lavender,
+                  title: 'About UTOPIA',
+                  value: 'Info & releases',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => UtopiaSectionScreen(
+                        initialIsSuperUser: _isSuperUser,
+                      ),
+                    ),
+                  ),
+                ),
+                _FlatSettingsRow(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  color: theme.teal,
+                  title: 'Feedback & Support',
+                  value: 'Bugs & features',
+                  onTap: _openRaiseIssue,
+                ),
+
+                const SizedBox(height: 36),
+
+                // ── Sign Out ──
+                Center(
+                  child: GestureDetector(
+                    onTap: _showSignOutDialog,
+                    child: Text(
+                      'Sign Out',
+                      style: GoogleFonts.robotoFlex(
+                        color: U.red,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Footer
                 Center(
                   child: Text(
-                    'Designed by John Moses',
+                    '𝕀 ℕ 𝔽 𝔼 ℝ ℕ 𝕆',
                     style: GoogleFonts.robotoFlex(
                       color: U.dim,
                       fontSize: 11,
@@ -822,72 +643,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-class _SettingsTile extends StatelessWidget {
+/// Minimal flat chip — no border, just subtle tinted background
+class _FlatChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _FlatChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: M3Shapes.fullRadius,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.robotoFlex(
+              color: color,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Flat settings row — no card background, just a clean row with hairline divider
+class _FlatSettingsRow extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String title;
-  final String subtitle;
+  final String value;
   final VoidCallback onTap;
 
-  const _SettingsTile({
+  const _FlatSettingsRow({
     required this.icon,
     required this.color,
     required this.title,
-    required this.subtitle,
+    required this.value,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return M3Pressable(
-      onTap: onTap,
-      scaleFactor: 0.98,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: color.withValues(alpha: 0.14),
-              ),
-              child: Center(
-                child: Icon(icon, color: color, size: 19),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
+    return Column(
+      children: [
+        M3Pressable(
+          onTap: onTap,
+          scaleFactor: 0.99,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
                     title,
                     style: GoogleFonts.robotoFlex(
                       color: U.text,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.robotoFlex(
-                      color: U.sub,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  value,
+                  style: GoogleFonts.robotoFlex(
+                    color: U.dim,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w400,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right_rounded, color: U.dim, size: 18),
+              ],
             ),
-            Icon(Icons.chevron_right_rounded, color: U.dim, size: 18),
-          ],
+          ),
         ),
-      ),
+        Divider(height: 1, thickness: 0.4, color: U.outlineVariant.withValues(alpha: 0.25)),
+      ],
     );
   }
 }
@@ -1488,7 +1337,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                               ),
                               Switch(
                                 value: _showRollNumberOnProfile,
-                                activeColor: theme.primary,
+                                activeThumbColor: theme.primary,
                                 activeTrackColor: theme.primary.withValues(alpha: 0.25),
                                 inactiveThumbColor: isDark ? const Color(0xFFD4D4D8) : U.sub,
                                 inactiveTrackColor: isDark ? const Color(0xFF27272A) : U.surfaceContainerHighest,
@@ -1615,24 +1464,14 @@ class _ThemeStyleSheetState extends State<_ThemeStyleSheet> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Dark Monochrome UI',
-                            style: GoogleFonts.robotoFlex(
-                              color: U.text,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Clean, content-first black & gray palette',
-                            style: GoogleFonts.robotoFlex(color: U.sub, fontSize: 12),
-                          ),
-                        ],
+                      Text(
+                        'App Themes',
+                        style: GoogleFonts.robotoFlex(
+                          color: U.text,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
                       ),
                       IconButton(
                         icon: Icon(Icons.close_rounded, color: U.sub, size: 20),
@@ -1641,7 +1480,7 @@ class _ThemeStyleSheetState extends State<_ThemeStyleSheet> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
                 // Content List
                 Expanded(
@@ -1649,59 +1488,6 @@ class _ThemeStyleSheetState extends State<_ThemeStyleSheet> {
                     controller: scrollController,
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
                     children: [
-                      // Dark Mode Enforcement Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: U.surfaceContainerLow,
-                          borderRadius: M3Shapes.mediumRadius,
-                          border: Border.all(color: U.border.withValues(alpha: 0.5), width: 0.8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.dark_mode_rounded, color: U.text, size: 20),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Dark Mode Only',
-                                    style: GoogleFonts.robotoFlex(
-                                      color: U.text,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Optimized for high contrast legibility',
-                                    style: GoogleFonts.robotoFlex(
-                                      color: U.sub,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-
-                      // Section Title
-                      Text(
-                        'MONOCHROME VARIANTS',
-                        style: GoogleFonts.robotoFlex(
-                          color: U.sub,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Palette List
                       ...filteredThemes.map((t) {
                         final isSelected = t.key == appThemeNotifier.value.key;
                         return Padding(
@@ -1801,13 +1587,39 @@ class _ThemePaletteTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    theme.label,
-                    style: GoogleFonts.robotoFlex(
-                      color: U.text,
-                      fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          theme.label,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.robotoFlex(
+                            color: U.text,
+                            fontSize: 14,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: theme.isDark
+                              ? theme.primary.withValues(alpha: 0.15)
+                              : theme.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          theme.isDark ? 'DARK' : 'LIGHT',
+                          style: GoogleFonts.robotoFlex(
+                            color: theme.primary,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 1),
                   Text(
@@ -2190,27 +2002,7 @@ class _UserProjectsProfileSectionState extends State<_UserProjectsProfileSection
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                              decoration: BoxDecoration(
-                                color: U.primary.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: U.primary.withValues(alpha: 0.28),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Text(
-                                'BETA',
-                                style: GoogleFonts.robotoFlex(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w800,
-                                  color: U.primary,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
+
                             if (projects.isNotEmpty) ...[
                               const SizedBox(width: 6),
                               Container(

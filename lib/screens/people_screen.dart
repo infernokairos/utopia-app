@@ -18,7 +18,6 @@ import '../widgets/instagram_badge.dart';
 import '../widgets/superuser_badge.dart';
 import '../widgets/utopia_loader.dart';
 import '../widgets/utopia_snackbar.dart';
-import '../widgets/sciwordle_badge.dart';
 import '../widgets/thought_cloud_badge.dart';
 import '../widgets/utopia_wave_button.dart';
 import '../widgets/wave_count_badge.dart';
@@ -1787,8 +1786,6 @@ class _PeerGridCardState extends State<_PeerGridCard> {
     final isSuperuser = widget.user['role'] == 'superuser';
     final isMe = uid == widget.currentUid;
     final hasActiveVibe = widget.vibe != null;
-    final sciwordleTitle = (widget.user['sciwordleTitle'] ?? '').toString().trim();
-    final showSciwordleBadge = widget.user['showSciwordleBadge'] != false;
 
     return M3Pressable(
       onTap: widget.onTap,
@@ -1916,14 +1913,10 @@ class _PeerGridCardState extends State<_PeerGridCard> {
                       color: U.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(
-                        color: (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                            ? SciwordleBadge.getTitleThemeColor(sciwordleTitle)
-                            : (widget.vibe != null
-                                ? U.primary
-                                : U.outlineVariant.withValues(alpha: 0.35)),
-                        width: (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                            ? 2.5
-                            : (widget.vibe != null ? 2.2 : 1.0),
+                        color: widget.vibe != null
+                            ? U.primary
+                            : U.outlineVariant.withValues(alpha: 0.35),
+                        width: widget.vibe != null ? 2.2 : 1.0,
                       ),
                     ),
                     padding: const EdgeInsets.all(3.5),
@@ -1961,19 +1954,6 @@ class _PeerGridCardState extends State<_PeerGridCard> {
                       ),
                     ),
                 ],
-                if (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                  Positioned(
-                    top: -13,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: SciwordleBadge(
-                        title: sciwordleTitle,
-                        compact: true,
-                        showEmoji: false,
-                      ),
-                    ),
-                  ),
               ],
             ),
 
@@ -2226,8 +2206,6 @@ class _PeerListTileState extends State<_PeerListTile> {
     final isSuperuser = widget.user['role'] == 'superuser';
     final isMe = uid == widget.currentUid;
     final hasActiveVibe = widget.vibe != null;
-    final sciwordleTitle = (widget.user['sciwordleTitle'] ?? '').toString().trim();
-    final showSciwordleBadge = widget.user['showSciwordleBadge'] != false;
 
     return M3Pressable(
       onTap: widget.onTap,
@@ -2347,14 +2325,10 @@ class _PeerListTileState extends State<_PeerListTile> {
                       color: U.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                            ? SciwordleBadge.getTitleThemeColor(sciwordleTitle)
-                            : (widget.vibe != null
-                                ? U.primary
-                                : U.outlineVariant.withValues(alpha: 0.35)),
-                        width: (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                            ? 2.2
-                            : (widget.vibe != null ? 2.0 : 0.8),
+                        color: widget.vibe != null
+                            ? U.primary
+                            : U.outlineVariant.withValues(alpha: 0.35),
+                        width: widget.vibe != null ? 2.0 : 0.8,
                       ),
                     ),
                     padding: const EdgeInsets.all(2.5),
@@ -2392,19 +2366,6 @@ class _PeerListTileState extends State<_PeerListTile> {
                       ),
                     ),
                 ],
-                if (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                  Positioned(
-                    top: -8,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: SciwordleBadge(
-                        title: sciwordleTitle,
-                        compact: true,
-                        showEmoji: false,
-                      ),
-                    ),
-                  ),
               ],
             ),
             const SizedBox(width: 14),
@@ -3637,8 +3598,6 @@ class _QuickPeekProfileSheetState extends State<_QuickPeekProfileSheet> {
     final isSuperuser = widget.user['role'] == 'superuser';
     final wavesCount = (widget.user['wavesReceivedCount'] as num?)?.toInt() ?? 0;
     final isMe = uid == widget.currentUid;
-    final sciwordleTitle = (widget.user['sciwordleTitle'] ?? '').toString().trim();
-    final showSciwordleBadge = widget.user['showSciwordleBadge'] != false;
 
     return SafeArea(
       top: false,
@@ -3859,14 +3818,10 @@ class _QuickPeekProfileSheetState extends State<_QuickPeekProfileSheet> {
                               color: U.surfaceContainerHigh,
                               borderRadius: BorderRadius.circular(22),
                               border: Border.all(
-                                color: (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                                    ? SciwordleBadge.getTitleThemeColor(sciwordleTitle)
-                                    : (widget.vibe != null
-                                        ? U.primary
-                                        : U.outlineVariant.withValues(alpha: 0.35)),
-                                width: (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                                    ? 2.5
-                                    : (widget.vibe != null ? 2.0 : 1.0),
+                                color: widget.vibe != null
+                                    ? U.primary
+                                    : U.outlineVariant.withValues(alpha: 0.35),
+                                width: widget.vibe != null ? 2.0 : 1.0,
                               ),
                             ),
                             padding: const EdgeInsets.all(3),
@@ -3895,19 +3850,6 @@ class _QuickPeekProfileSheetState extends State<_QuickPeekProfileSheet> {
                               child: ThoughtCloudBadge(
                                 vibe: widget.vibe,
                                 avatarRadius: 34,
-                              ),
-                            ),
-                          if (showSciwordleBadge && sciwordleTitle.isNotEmpty)
-                            Positioned(
-                              top: -12,
-                              left: 0,
-                              right: 0,
-                              child: Center(
-                                child: SciwordleBadge(
-                                  title: sciwordleTitle,
-                                  compact: true,
-                                  showEmoji: false,
-                                ),
                               ),
                             ),
                         ],

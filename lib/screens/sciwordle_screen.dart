@@ -6,8 +6,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:confetti/confetti.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import '../main.dart';
 import '../models/sciwordle_model.dart';
@@ -435,14 +433,6 @@ class _SciwordleScreenState extends State<SciwordleScreen>
     bool morning = prefs.getBool('sciwordle_notif_morning') ?? true;
     bool afternoon = prefs.getBool('sciwordle_notif_afternoon') ?? true;
     bool evening = prefs.getBool('sciwordle_notif_evening') ?? true;
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    bool showBadge = true;
-    if (uid != null) {
-      try {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-        showBadge = userDoc.data()?['showSciwordleBadge'] != false;
-      } catch (_) {}
-    }
 
     if (!mounted) return;
 
@@ -637,57 +627,7 @@ class _SciwordleScreenState extends State<SciwordleScreen>
                   ),
                 ),
 
-                const SizedBox(height: 20),
 
-                // Section 2: Profile Badge
-                Text(
-                  'PROFILE BADGE',
-                  style: GoogleFonts.robotoFlex(
-                    color: U.primary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: U.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: U.outlineVariant.withValues(alpha: 0.35),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: SwitchListTile.adaptive(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    title: Text(
-                      'Show Badge on Profile Icon',
-                      style: GoogleFonts.robotoFlex(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14.5,
-                        color: U.text,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Display your elite title badge (Alpha, Prime, Fire, etc.) on your profile avatar.',
-                      style: GoogleFonts.robotoFlex(color: U.sub, fontSize: 12),
-                    ),
-                    value: showBadge,
-                    activeTrackColor: U.primary,
-                    onChanged: (val) async {
-                      setModalState(() => showBadge = val);
-                      await prefs.setBool('show_sciwordle_badge', val);
-                      if (uid != null) {
-                        try {
-                          await FirebaseFirestore.instance.collection('users').doc(uid).set({
-                            'showSciwordleBadge': val,
-                          }, SetOptions(merge: true));
-                        } catch (_) {}
-                      }
-                    },
-                  ),
-                ),
               ],
             ),
           );
@@ -834,27 +774,6 @@ class _SciwordleScreenState extends State<SciwordleScreen>
                   fontSize: 20,
                   color: U.text,
                   letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: U.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: U.primary.withValues(alpha: 0.3),
-                    width: 0.8,
-                  ),
-                ),
-                child: Text(
-                  'BETA',
-                  style: GoogleFonts.robotoFlex(
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w800,
-                    color: U.primary,
-                    letterSpacing: 0.6,
-                  ),
                 ),
               ),
             ],

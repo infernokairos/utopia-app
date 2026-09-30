@@ -65,22 +65,7 @@ class _SciwordleLeaderboardScreenState
     return titles[entry.uid];
   }
 
-  Color _getTitleColor(String title, bool isDark) {
-    switch (title) {
-      case 'ALPHA':
-        return isDark ? const Color(0xFFEF4444) : const Color(0xFFDC2626);
-      case 'PRIME':
-        return isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706);
-      case 'FIRE':
-        return isDark ? const Color(0xFFFB923C) : const Color(0xFFEA580C);
-      case 'TOP 2':
-        return isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
-      case 'TOP 3':
-        return isDark ? const Color(0xFFC084FC) : const Color(0xFF9333EA);
-      default:
-        return U.primary;
-    }
-  }
+
 
   Color _getRankColor(int rank, bool isDark) {
     switch (rank) {
@@ -97,30 +82,6 @@ class _SciwordleLeaderboardScreenState
 
   Color _getStreakColor(bool isDark) {
     return isDark ? const Color(0xFFFB923C) : const Color(0xFFEA580C);
-  }
-
-  Widget _buildTitleBadge(String title, bool isDark) {
-    final titleColor = _getTitleColor(title, isDark);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-      decoration: BoxDecoration(
-        color: titleColor.withValues(alpha: isDark ? 0.16 : 0.10),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: titleColor.withValues(alpha: isDark ? 0.4 : 0.35),
-          width: 0.6,
-        ),
-      ),
-      child: Text(
-        title,
-        style: GoogleFonts.robotoFlex(
-          fontSize: 9,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.5,
-          color: titleColor,
-        ),
-      ),
-    );
   }
 
   @override
@@ -549,10 +510,6 @@ class _SciwordleLeaderboardScreenState
                     ],
                   ],
                 ),
-                if (title != null) ...[
-                  const SizedBox(height: 3),
-                  _buildTitleBadge(title, isDark),
-                ],
               ],
             ),
           ),
@@ -675,10 +632,6 @@ class _SciwordleLeaderboardScreenState
                             ),
                           ),
                         ),
-                        if (title != null) ...[
-                          const SizedBox(width: 8),
-                          _buildTitleBadge(title, isDark),
-                        ],
                       ],
                     ),
                   ],

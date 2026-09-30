@@ -670,27 +670,7 @@ class _LinkGraphScreenState extends State<LinkGraphScreen>
                                             letterSpacing: -0.2,
                                           ),
                                         ),
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: theme.primary.withValues(alpha: 0.12),
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(
-                                              color: theme.primary.withValues(alpha: 0.3),
-                                              width: 0.8,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            'BETA',
-                                            style: GoogleFonts.robotoFlex(
-                                              fontSize: 8,
-                                              fontWeight: FontWeight.w700,
-                                              color: theme.primary,
-                                              letterSpacing: 0.6,
-                                            ),
-                                          ),
-                                        ),
+
                                         const SizedBox(width: 8),
                                         AnimatedContainer(
                                           duration:
