@@ -37,7 +37,21 @@ import 'focus_database_service.dart';
 import 'focus_supabase_service.dart';
 
 @pragma('vm:entry-point')
+Future<void> notificationActionBackgroundCallback(NotificationResponse response) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final localNotif = FlutterLocalNotificationsPlugin();
+  const androidSettings = AndroidInitializationSettings('ic_notification');
+  try {
+    await localNotif.initialize(
+      const InitializationSettings(android: androidSettings),
+    );
+  } catch (_) {}
+  await NotificationService.onDidReceiveBackgroundNotificationResponse(response);
+}
+
+@pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  WidgetsFlutterBinding.ensureInitialized();
   if (!PlatformSupport.supportsNotifications) {
     return;
   }
@@ -45,9 +59,14 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+    final type = (message.data['type'] ?? '').toString();
+    final isChat = type == 'chat';
+
     // If message contains a standard notification payload, Android/Google Play Services
     // and iOS APNs automatically render the system notification banner directly.
+    // Displaying another notification locally would create a duplicate.
     if (message.notification != null) {
+      debugPrint('[FCM_BACKGROUND] System tray already displayed notification for id=${message.messageId}');
       return;
     }
 
@@ -55,16 +74,37 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     final rawTitle = (message.data['title']?.toString() ??
         message.data['senderName']?.toString() ??
         message.data['sender_name']?.toString() ??
+        message.notification?.title ??
         '').trim();
     final rawBody = (message.data['body']?.toString() ??
         message.data['message']?.toString() ??
         message.data['message_text']?.toString() ??
+        message.notification?.body ??
         '').trim();
 
     // Ignore empty/data-only background pings that contain no user-visible message
     if (rawBody.isEmpty) {
       return;
     }
+
+    // Deduplicate incoming background messages within 15 seconds
+    try {
+      final rawMsgId = message.messageId;
+      final msgKey = (rawMsgId != null && rawMsgId.isNotEmpty)
+          ? rawMsgId
+          : '${rawTitle}_${rawBody}_${message.data['type']}_${message.data['chatId'] ?? message.data['messageId']}';
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
+      final lastHandledKey = prefs.getString('last_bg_fcm_handled_key');
+      final lastHandledTime = prefs.getInt('last_bg_fcm_handled_time') ?? 0;
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      if (lastHandledKey == msgKey && (nowMs - lastHandledTime) < 15000) {
+        debugPrint('[FCM_BACKGROUND] Dropped duplicate incoming message: $msgKey');
+        return;
+      }
+      await prefs.setString('last_bg_fcm_handled_key', msgKey);
+      await prefs.setInt('last_bg_fcm_handled_time', nowMs);
+    } catch (_) {}
 
     final title = rawTitle.isNotEmpty ? rawTitle : 'UTOPIA';
     final body = rawBody;
@@ -81,12 +121,27 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       iOS: darwinSettings,
       macOS: darwinSettings,
     );
-    await localNotifications.initialize(initSettings);
+    await localNotifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) async {
+        if (response.actionId == 'action_reply' || response.actionId == 'action_mark_as_read') {
+          if (response.payload != null && response.payload!.isNotEmpty) {
+            await NotificationService.handleChatNotificationAction(
+              actionId: response.actionId!,
+              replyInput: response.input,
+              payload: response.payload!,
+              notificationId: response.id ?? 0,
+            );
+          }
+        }
+      },
+      onDidReceiveBackgroundNotificationResponse: notificationActionBackgroundCallback,
+    );
 
-    const channel = AndroidNotificationChannel(
+    const generalChannel = AndroidNotificationChannel(
       'utopia_high_importance_v3',
       'UTOPIA Notifications',
-      description: 'Live alerts, chat messages, and reminders from UTOPIA',
+      description: 'Live alerts, general notifications, and reminders from UTOPIA',
       importance: Importance.max,
       playSound: true,
       enableVibration: true,
@@ -94,44 +149,115 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       enableLights: true,
     );
 
-    await localNotifications
+    const chatChannel = AndroidNotificationChannel(
+      'utopia_chat_messages_v4',
+      'UTOPIA Direct Messages',
+      description: 'Real-time conversational chat messages from friends',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+      showBadge: true,
+      enableLights: true,
+    );
+
+    final androidPlugin = localNotifications
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(channel);
+        >();
+    await androidPlugin?.createNotificationChannel(generalChannel);
+    await androidPlugin?.createNotificationChannel(chatChannel);
 
-    final notifTag = (message.data['messageId'] ??
-        message.data['waveId'] ??
-        message.data['linkDocId'] ??
-        message.data['followDocId'] ??
-        message.data['notificationId'] ??
-        (message.data['type'] != null && message.data['chatId'] != null ? '${message.data['type']}_${message.data['chatId']}' : null) ??
-        message.messageId ??
-        '${title}_$body').toString();
+    final chatId = (message.data['chatId'] ?? message.data['chat_id'] ?? '').toString();
+    final notifTag = (isChat && chatId.isNotEmpty)
+        ? 'chat_$chatId'
+        : (message.data['messageId'] ??
+            message.data['waveId'] ??
+            message.data['linkDocId'] ??
+            message.data['followDocId'] ??
+            message.data['notificationId'] ??
+            message.messageId ??
+            '${title}_$body').toString();
     final notifId = notifTag.hashCode & 0x7FFFFFFF;
 
-    final type = (message.data['type'] ?? '').toString();
-    final actions = NotificationService._getActionsForType(type, Map<String, dynamic>.from(message.data));
+    final themeColor = await NotificationService.getNotificationThemeColor();
+    final senderName = (message.data['senderName'] ?? message.data['sender_name'] ?? title).toString();
+    final senderId = (message.data['senderId'] ?? message.data['sender_id'] ?? '').toString();
+    final recipientId = (message.data['recipientId'] ?? message.data['recipient_id'] ?? '').toString();
+    final List<AndroidNotificationAction>? actions = isChat
+        ? NotificationService.buildChatActions(senderName: senderName)
+        : NotificationService._getActionsForType(type, Map<String, dynamic>.from(message.data));
+
+    final StyleInformation styleInformation;
+    final unreadCountStr = (message.data['unreadCount'] ?? message.data['unread_count'] ?? '').toString();
+    final unreadCount = int.tryParse(unreadCountStr);
+    if (isChat && chatId.isNotEmpty) {
+      final messageList = await NotificationService.getAccumulatedChatMessages(
+        chatId: chatId,
+        senderName: senderName,
+        senderId: senderId,
+        newBody: body,
+        unreadCount: unreadCount,
+      );
+      const mePerson = Person(
+        name: 'Me',
+        key: 'me',
+      );
+      styleInformation = MessagingStyleInformation(
+        mePerson,
+        conversationTitle: null,
+        groupConversation: false,
+        messages: messageList,
+      );
+    } else if (isChat) {
+      final senderPerson = Person(
+        name: senderName.isNotEmpty ? senderName : 'Friend',
+        key: senderId.isNotEmpty ? senderId : null,
+        important: true,
+        icon: const DrawableResourceAndroidIcon('ic_notification_large'),
+      );
+      const mePerson = Person(
+        name: 'Me',
+        key: 'me',
+      );
+      styleInformation = MessagingStyleInformation(
+        mePerson,
+        conversationTitle: null,
+        groupConversation: false,
+        messages: [
+          Message(
+            body,
+            DateTime.now(),
+            senderPerson,
+          ),
+        ],
+      );
+    } else {
+      styleInformation = BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'UTOPIA',
+      );
+    }
 
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
-        'utopia_high_importance_v3',
-        'UTOPIA Notifications',
-        channelDescription: 'Live alerts, chat messages, and reminders from UTOPIA',
+        isChat ? 'utopia_chat_messages_v4' : 'utopia_high_importance_v3',
+        isChat ? 'UTOPIA Direct Messages' : 'UTOPIA Notifications',
+        channelDescription: isChat
+            ? 'Real-time conversational chat messages from friends'
+            : 'Live alerts, chat messages, and reminders from UTOPIA',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
         enableVibration: true,
         enableLights: true,
-        category: AndroidNotificationCategory.message,
-        tag: notifTag,
-        styleInformation: BigTextStyleInformation(
-          body,
-          contentTitle: title,
-          summaryText: 'UTOPIA',
-        ),
-        icon: 'ic_notification',
+        category: isChat ? AndroidNotificationCategory.message : AndroidNotificationCategory.event,
+        tag: null,
+        groupKey: (isChat && chatId.isNotEmpty) ? 'chat_$chatId' : null,
+        color: themeColor,
         actions: actions,
+        styleInformation: styleInformation,
+        icon: 'ic_notification',
       ),
       iOS: const DarwinNotificationDetails(
         presentAlert: true,
@@ -142,6 +268,22 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       ),
     );
 
+    // Cancel any system-generated notification from Google Play Services (which uses id 0 or collapseTag)
+    try {
+      if (notifTag.isNotEmpty) {
+        await androidPlugin?.cancel(0, tag: notifTag);
+      }
+      await androidPlugin?.cancel(0);
+      final active = await androidPlugin?.getActiveNotifications();
+      if (active != null) {
+        for (final n in active) {
+          if (n.id != notifId && (n.tag == notifTag || (isChat && n.tag == 'chat_$chatId'))) {
+            await androidPlugin?.cancel(n.id ?? 0, tag: n.tag);
+          }
+        }
+      }
+    } catch (_) {}
+
     await localNotifications.show(
       notifId,
       title,
@@ -150,6 +292,12 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       payload: jsonEncode({
         'title': title,
         'body': body,
+        'tag': notifTag,
+        'type': type,
+        'senderId': senderId,
+        'recipientId': recipientId,
+        'chatId': chatId,
+        'senderName': senderName,
         'data': message.data,
       }),
     );
@@ -175,13 +323,252 @@ class NotificationService {
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'utopia_high_importance_v3',
     'UTOPIA Notifications',
-    description: 'Live alerts, chat messages, and reminders from UTOPIA',
+    description: 'Live alerts, general notifications, and reminders from UTOPIA',
     importance: Importance.max,
     playSound: true,
     enableVibration: true,
     showBadge: true,
     enableLights: true,
   );
+
+  static const AndroidNotificationChannel _chatChannel = AndroidNotificationChannel(
+    'utopia_chat_messages_v4',
+    'UTOPIA Direct Messages',
+    description: 'Real-time conversational chat messages from friends',
+    importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
+    showBadge: true,
+    enableLights: true,
+  );
+
+  /// Resolves the user's active theme primary color for notification accents and buttons.
+  static Future<Color> getNotificationThemeColor() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final colorVal = prefs.getInt('theme_primary_color_value');
+      if (colorVal != null && colorVal != 0) {
+        return Color(colorVal);
+      }
+    } catch (_) {}
+    return appThemeNotifier.value.primary;
+  }
+
+  /// Builds interactive Android notification actions for incoming chat messages.
+  static List<AndroidNotificationAction> buildChatActions({
+    required String senderName,
+  }) {
+    return [
+      AndroidNotificationAction(
+        'action_reply',
+        'Reply',
+        inputs: [
+          AndroidNotificationActionInput(
+            label: 'Reply to $senderName...',
+          ),
+        ],
+        allowGeneratedReplies: true,
+        showsUserInterface: false,
+        cancelNotification: true,
+      ),
+      const AndroidNotificationAction(
+        'action_mark_as_read',
+        'Mark as read',
+        showsUserInterface: false,
+        cancelNotification: true,
+      ),
+    ];
+  }
+
+  /// Persists and returns the conversation thread for a chat so Android displays
+  /// a single grouped notification with multiple messages (like Instagram / WhatsApp).
+  static Future<List<Message>> getAccumulatedChatMessages({
+    required String chatId,
+    required String senderName,
+    required String senderId,
+    required String newBody,
+    int? unreadCount,
+    DateTime? timestamp,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      await prefs.reload();
+    } catch (_) {}
+
+    // Check Firestore for the true unreadCount if not supplied in push payload
+    int effectiveUnread = unreadCount ?? 0;
+    if (effectiveUnread <= 0) {
+      try {
+        final myUid = FirebaseAuth.instance.currentUser?.uid ??
+            prefs.getString('cached_user_uid') ??
+            prefs.getString('auth_uid') ??
+            prefs.getString('last_known_uid') ??
+            '';
+        if (myUid.isNotEmpty) {
+          final chatDoc = await FirebaseFirestore.instance
+              .collection('chats')
+              .doc(chatId)
+              .get()
+              .timeout(const Duration(milliseconds: 1500));
+          if (chatDoc.exists) {
+            effectiveUnread =
+                (chatDoc.data()?['unreadCount_$myUid'] as num?)?.toInt() ?? 0;
+          }
+        }
+      } catch (_) {}
+    }
+
+    final key = 'notif_msgs_$chatId';
+    final rawList = prefs.getStringList(key) ?? [];
+    final nowMs = (timestamp ?? DateTime.now()).millisecondsSinceEpoch;
+    final lastReadMs = prefs.getInt('chat_last_read_$chatId') ?? 0;
+
+    final List<Map<String, dynamic>> messagesJson = [];
+
+    // Only keep prior messages if there are multiple unread messages (> 1)
+    if (effectiveUnread > 1) {
+      for (final item in rawList) {
+        try {
+          final decoded = jsonDecode(item);
+          if (decoded is Map<String, dynamic>) {
+            final time = decoded['time'] as int? ?? 0;
+            if (time > lastReadMs) {
+              messagesJson.add(decoded);
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Keep at most (effectiveUnread - 1) previous unread messages so total equals effectiveUnread
+      final maxPrior = effectiveUnread - 1;
+      if (messagesJson.length > maxPrior) {
+        messagesJson.removeRange(0, messagesJson.length - maxPrior);
+      }
+    } else {
+      // Single unread message: start completely fresh!
+      messagesJson.clear();
+    }
+
+    // Append new incoming message
+    messagesJson.add({
+      'text': newBody,
+      'time': nowMs,
+      'isMe': false,
+    });
+
+    // Keep up to 10 most recent unread messages
+    if (messagesJson.length > 10) {
+      messagesJson.removeRange(0, messagesJson.length - 10);
+    }
+
+    await prefs.setStringList(
+      key,
+      messagesJson.map((m) => jsonEncode(m)).toList(),
+    );
+
+    final senderPerson = Person(
+      name: senderName.isNotEmpty ? senderName : 'Friend',
+      key: senderId.isNotEmpty ? senderId : null,
+      important: true,
+      icon: const DrawableResourceAndroidIcon('ic_notification_large'),
+    );
+    const mePerson = Person(
+      name: 'Me',
+      key: 'me',
+    );
+
+    return messagesJson.map((m) {
+      final text = (m['text'] ?? '').toString();
+      final timeMs = m['time'] as int? ?? nowMs;
+      final isMe = m['isMe'] == true;
+      return Message(
+        text,
+        DateTime.fromMillisecondsSinceEpoch(timeMs),
+        isMe ? mePerson : senderPerson,
+      );
+    }).toList();
+  }
+
+  /// Records a sent reply into the accumulated chat history so subsequent
+  /// notification updates show both sides of the conversation thread.
+  static Future<void> recordSentChatMessage({
+    required String chatId,
+    required String text,
+  }) async {
+    if (chatId.isEmpty || text.isEmpty) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'notif_msgs_$chatId';
+      final rawList = prefs.getStringList(key) ?? [];
+      final List<Map<String, dynamic>> messagesJson = [];
+      for (final item in rawList) {
+        try {
+          final decoded = jsonDecode(item);
+          if (decoded is Map<String, dynamic>) {
+            messagesJson.add(decoded);
+          }
+        } catch (_) {}
+      }
+      messagesJson.add({
+        'text': text,
+        'time': DateTime.now().millisecondsSinceEpoch,
+        'isMe': true,
+      });
+      if (messagesJson.length > 10) {
+        messagesJson.removeRange(0, messagesJson.length - 10);
+      }
+      await prefs.setStringList(
+        key,
+        messagesJson.map((m) => jsonEncode(m)).toList(),
+      );
+    } catch (_) {}
+  }
+
+  /// Cancels any active notification for a chat and clears its accumulated message history.
+  static Future<void> clearChatNotification(String chatId) async {
+    if (chatId.isEmpty) return;
+    final notifId = 'chat_$chatId'.hashCode & 0x7FFFFFFF;
+    final notifTag = 'chat_$chatId';
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+    // 1. Immediately purge persisted messages and record last read timestamp
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      try {
+        await prefs.reload();
+      } catch (_) {}
+      await prefs.remove('notif_msgs_$chatId');
+      await prefs.setInt('chat_last_read_$chatId', nowMs);
+    } catch (e) {
+      debugPrint('[NOTIF] Failed to clear prefs for $chatId: $e');
+    }
+
+    // 2. Safely dismiss Android / local notifications (both with and without tag)
+    try {
+      final localNotif = FlutterLocalNotificationsPlugin();
+      await localNotif.cancel(notifId);
+      await localNotif.cancel(notifId, tag: notifTag);
+      await _localNotifications.cancel(notifId);
+      await _localNotifications.cancel(notifId, tag: notifTag);
+      final androidPlugin = localNotif
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.cancel(notifId);
+      await androidPlugin?.cancel(notifId, tag: notifTag);
+
+      // Cancel any active notifications matching this tag or id
+      final active = await androidPlugin?.getActiveNotifications();
+      if (active != null) {
+        for (final n in active) {
+          if (n.tag == notifTag || n.id == notifId || (n.tag?.contains(chatId) ?? false)) {
+            await androidPlugin?.cancel(n.id ?? 0, tag: n.tag);
+            await androidPlugin?.cancel(n.id ?? 0);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[NOTIF] Failed to cancel notifications for $chatId: $e');
+    }
+  }
 
   /// Robust timezone initialization with graceful multi-tier fallback.
   static Future<void> _ensureTimezone() async {
@@ -243,8 +630,19 @@ class NotificationService {
       );
       await _localNotifications.initialize(
         initSettings,
-        onDidReceiveNotificationResponse: (NotificationResponse response) {
+        onDidReceiveNotificationResponse: (NotificationResponse response) async {
           try {
+            if (response.actionId == 'action_reply' || response.actionId == 'action_mark_as_read') {
+              if (response.payload != null && response.payload!.isNotEmpty) {
+                await handleChatNotificationAction(
+                  actionId: response.actionId!,
+                  replyInput: response.input,
+                  payload: response.payload!,
+                  notificationId: response.id ?? 0,
+                );
+              }
+              return;
+            }
             if (response.actionId != null && response.actionId!.isNotEmpty && response.payload != null) {
               unawaited(_handleQuickAction(
                 actionId: response.actionId!,
@@ -261,7 +659,7 @@ class NotificationService {
             debugPrint('Error handling notification response: $e');
           }
         },
-        onDidReceiveBackgroundNotificationResponse: onDidReceiveBackgroundNotificationResponse,
+        onDidReceiveBackgroundNotificationResponse: notificationActionBackgroundCallback,
       );
 
       final launchDetails = await _localNotifications
@@ -274,12 +672,13 @@ class NotificationService {
         }
       }
 
-      // Create high-importance notification channel for Android
-      await _localNotifications
+      // Create high-importance notification channels for Android
+      final androidPlugin = _localNotifications
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.createNotificationChannel(_channel);
+          >();
+      await androidPlugin?.createNotificationChannel(_channel);
+      await androidPlugin?.createNotificationChannel(_chatChannel);
 
       // Request runtime notification permissions
       await _requestRuntimePermissions();
@@ -486,6 +885,9 @@ class NotificationService {
 
   static void setActiveChat(String? chatId) {
     _activeChatId = chatId;
+    if (chatId != null && chatId.isNotEmpty) {
+      unawaited(clearChatNotification(chatId));
+    }
   }
 
   static Future<void> sendPersonalMorningNotification({
@@ -547,20 +949,92 @@ class NotificationService {
       return;
     }
 
-    final notifTag = (data?['messageId'] ??
-        data?['waveId'] ??
-        data?['linkDocId'] ??
-        data?['followDocId'] ??
-        data?['notificationId'] ??
-        (data != null && data['type'] != null && data['chatId'] != null ? '${data['type']}_${data['chatId']}' : null) ??
-        '${title}_$body').toString();
+    final type = (data?['type'] ?? '').toString();
+    final isChat = type == 'chat';
+    final chatId = (data?['chatId'] ?? data?['chat_id'] ?? '').toString();
+
+    final notifTag = (isChat && chatId.isNotEmpty)
+        ? 'chat_$chatId'
+        : (data?['messageId'] ??
+            data?['waveId'] ??
+            data?['linkDocId'] ??
+            data?['followDocId'] ??
+            data?['notificationId'] ??
+            '${title}_$body').toString();
     final notifId = notificationId ?? (notifTag.hashCode & 0x7FFFFFFF);
+
+    final senderName = (data?['senderName'] ?? data?['sender_name'] ?? title).toString();
+    final themeColor = await getNotificationThemeColor();
+    final List<AndroidNotificationAction>? actions = isChat
+        ? buildChatActions(senderName: senderName)
+        : null;
+
+    final senderId = (data?['senderId'] ?? data?['sender_id'] ?? '').toString();
+    final recipientId = (data?['recipientId'] ?? data?['recipient_id'] ?? data?['recipientUid'] ?? '').toString();
 
     final payloadString = jsonEncode({
       'title': title,
       'body': body,
+      'tag': notifTag,
+      'type': type,
+      'senderId': senderId,
+      'recipientId': recipientId,
+      'chatId': chatId,
+      'senderName': senderName,
       'data': data ?? const <String, dynamic>{},
     });
+
+    final StyleInformation styleInformation;
+    final unreadCountStr = (data?['unreadCount'] ?? data?['unread_count'] ?? '').toString();
+    final unreadCount = int.tryParse(unreadCountStr);
+    if (isChat && chatId.isNotEmpty) {
+      final messageList = await getAccumulatedChatMessages(
+        chatId: chatId,
+        senderName: senderName,
+        senderId: senderId,
+        newBody: body,
+        unreadCount: unreadCount,
+      );
+      const mePerson = Person(
+        name: 'Me',
+        key: 'me',
+      );
+      styleInformation = MessagingStyleInformation(
+        mePerson,
+        conversationTitle: null,
+        groupConversation: false,
+        messages: messageList,
+      );
+    } else if (isChat) {
+      final senderPerson = Person(
+        name: senderName.isNotEmpty ? senderName : 'Friend',
+        key: senderId.isNotEmpty ? senderId : null,
+        important: true,
+        icon: const DrawableResourceAndroidIcon('ic_notification_large'),
+      );
+      const mePerson = Person(
+        name: 'Me',
+        key: 'me',
+      );
+      styleInformation = MessagingStyleInformation(
+        mePerson,
+        conversationTitle: null,
+        groupConversation: false,
+        messages: [
+          Message(
+            body,
+            DateTime.now(),
+            senderPerson,
+          ),
+        ],
+      );
+    } else {
+      styleInformation = BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'UTOPIA',
+      );
+    }
 
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
@@ -570,29 +1044,82 @@ class NotificationService {
       presentList: true,
     );
 
-    final type = (data?['type'] ?? '').toString();
-    final actions = _getActionsForType(type, data);
-
+    // 1. Attempt display with large icon
     try {
       final details = NotificationDetails(
         android: AndroidNotificationDetails(
-          'utopia_high_importance_v3',
-          'UTOPIA Notifications',
-          channelDescription: 'Live alerts, chat messages, and reminders from UTOPIA',
+          isChat ? 'utopia_chat_messages_v4' : 'utopia_high_importance_v3',
+          isChat ? 'UTOPIA Direct Messages' : 'UTOPIA Notifications',
+          channelDescription: isChat
+              ? 'Real-time conversational chat messages from friends'
+              : 'Live alerts, chat messages, and reminders from UTOPIA',
           importance: Importance.max,
           priority: Priority.max,
           playSound: true,
           enableVibration: true,
           enableLights: true,
-          category: AndroidNotificationCategory.message,
-          tag: notifTag,
-          styleInformation: BigTextStyleInformation(
-            body,
-            contentTitle: title,
-            summaryText: 'UTOPIA',
-          ),
-          icon: 'ic_notification',
+          category: isChat ? AndroidNotificationCategory.message : AndroidNotificationCategory.event,
+          tag: null,
+          groupKey: (isChat && chatId.isNotEmpty) ? 'chat_$chatId' : null,
+          color: themeColor,
           actions: actions,
+          styleInformation: styleInformation,
+          icon: 'ic_notification',
+          largeIcon: const DrawableResourceAndroidBitmap('ic_notification_large'),
+        ),
+        iOS: iosDetails,
+      );
+
+      // Cancel any system-generated notification from Google Play Services (which uses id 0 or collapseTag)
+      final androidPlugin = _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      try {
+        if (notifTag.isNotEmpty) {
+          await androidPlugin?.cancel(0, tag: notifTag);
+        }
+        await androidPlugin?.cancel(0);
+        final active = await androidPlugin?.getActiveNotifications();
+        if (active != null) {
+          for (final n in active) {
+            if (n.id != notifId && (n.tag == notifTag || (isChat && n.tag == 'chat_$chatId'))) {
+              await androidPlugin?.cancel(n.id ?? 0, tag: n.tag);
+            }
+          }
+        }
+      } catch (_) {}
+
+      await _localNotifications.show(
+        notifId,
+        title,
+        body,
+        details,
+        payload: payloadString,
+      );
+      return;
+    } catch (e) {
+      debugPrint('NOTIF: Failed to show local notification with large icon: $e. Retrying without large icon...');
+    }
+
+    // 2. Fallback without large icon
+    try {
+      final details = NotificationDetails(
+        android: AndroidNotificationDetails(
+          isChat ? 'utopia_chat_messages_v4' : 'utopia_high_importance_v3',
+          isChat ? 'UTOPIA Direct Messages' : 'UTOPIA Notifications',
+          channelDescription: isChat
+              ? 'Real-time conversational chat messages from friends'
+              : 'Live alerts, chat messages, and reminders from UTOPIA',
+          importance: Importance.max,
+          priority: Priority.max,
+          playSound: true,
+          enableVibration: true,
+          enableLights: true,
+          category: isChat ? AndroidNotificationCategory.message : AndroidNotificationCategory.event,
+          tag: null,
+          groupKey: (isChat && chatId.isNotEmpty) ? 'chat_$chatId' : null,
+          color: themeColor,
+          actions: actions,
+          styleInformation: styleInformation,
+          icon: 'ic_notification',
         ),
         iOS: iosDetails,
       );
@@ -615,6 +1142,10 @@ class NotificationService {
       if (decoded is Map<String, dynamic>) {
         final title = (decoded['title'] ?? '').toString();
         final body = (decoded['body'] ?? '').toString();
+        final chatId = (decoded['chatId'] ?? decoded['data']?['chatId'] ?? '').toString();
+        if (chatId.isNotEmpty) {
+          unawaited(clearChatNotification(chatId));
+        }
         final data = decoded['data'] is Map
             ? Map<String, dynamic>.from(decoded['data'] as Map)
             : const <String, dynamic>{};
@@ -1378,8 +1909,20 @@ class NotificationService {
   }
 
   @pragma('vm:entry-point')
-  static void onDidReceiveBackgroundNotificationResponse(NotificationResponse response) {
+  static Future<void> onDidReceiveBackgroundNotificationResponse(NotificationResponse response) async {
+    WidgetsFlutterBinding.ensureInitialized();
     try {
+      if (response.actionId == 'action_reply' || response.actionId == 'action_mark_as_read') {
+        if (response.payload != null && response.payload!.isNotEmpty) {
+          await handleChatNotificationAction(
+            actionId: response.actionId!,
+            replyInput: response.input,
+            payload: response.payload!,
+            notificationId: response.id ?? 0,
+          );
+        }
+        return;
+      }
       if (response.actionId != null && response.actionId!.isNotEmpty && response.payload != null) {
         unawaited(_handleQuickAction(
           actionId: response.actionId!,
@@ -1389,8 +1932,269 @@ class NotificationService {
         ));
         return;
       }
+      if (response.payload != null && response.payload!.isNotEmpty) {
+        final payload = response.payload!;
+        final decoded = jsonDecode(payload);
+        if (decoded is Map<String, dynamic>) {
+          final type = decoded['type']?.toString();
+          if (type == 'focus_reminder') {
+            final actionId = response.actionId;
+            final habitId = decoded['habitId']?.toString();
+            final userId = decoded['userId']?.toString();
+            if (habitId != null && userId != null) {
+              unawaited(_handleBackgroundHabitAction(
+                actionId: actionId,
+                habitId: habitId,
+                userId: userId,
+                notificationId: response.id,
+              ));
+            }
+          }
+        }
+      }
     } catch (e) {
       debugPrint('Error in onDidReceiveBackgroundNotificationResponse: $e');
+    }
+  }
+
+  /// Directly processes interactive notification actions without opening the application.
+  @pragma('vm:entry-point')
+  static Future<void> handleChatNotificationAction({
+    required String actionId,
+    String? replyInput,
+    required String payload,
+    required int notificationId,
+  }) async {
+    WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('[NOTIF_ACTION] ── START ── action=$actionId, notifId=$notificationId, input="$replyInput"');
+
+    String notifTag = '';
+    String chatId = '';
+
+    try {
+      // ── 1. Initialize Firebase ──────────────────────────────────────────
+      try {
+        await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+        debugPrint('[NOTIF_ACTION] Firebase initialized');
+      } catch (e) {
+        debugPrint('[NOTIF_ACTION] Firebase.initializeApp (may already be init): $e');
+      }
+
+      // ── 2. Restore auth session (critical for Firestore writes) ─────────
+      // Background isolates don't share auth state. Wait up to 5s for
+      // Firebase to restore the persisted session from disk.
+      if (FirebaseAuth.instance.currentUser == null) {
+        debugPrint('[NOTIF_ACTION] Auth is null, waiting for session restore...');
+        try {
+          await FirebaseAuth.instance
+              .authStateChanges()
+              .firstWhere((u) => u != null)
+              .timeout(const Duration(seconds: 4));
+        } catch (_) {}
+
+        for (int i = 0; i < 16 && FirebaseAuth.instance.currentUser == null; i++) {
+          await Future.delayed(const Duration(milliseconds: 250));
+        }
+        if (FirebaseAuth.instance.currentUser != null) {
+          debugPrint('[NOTIF_ACTION] Auth restored: uid=${FirebaseAuth.instance.currentUser?.uid}');
+        }
+      }
+
+      // ── 3. Resolve sender UID ───────────────────────────────────────────
+      final firebaseUser = FirebaseAuth.instance.currentUser;
+      String myUid = firebaseUser?.uid ?? '';
+      if (myUid.isEmpty) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          myUid = prefs.getString('cached_user_uid') ??
+              prefs.getString('auth_uid') ??
+              prefs.getString('last_known_uid') ??
+              '';
+        } catch (_) {}
+      }
+
+      // If still empty, the recipient of the incoming notification on this device is ME
+      if (myUid.isEmpty) {
+        try {
+          final dynamic decodedRaw = jsonDecode(payload);
+          if (decodedRaw is Map<String, dynamic>) {
+            myUid = (decodedRaw['recipientId'] ??
+                    decodedRaw['data']?['recipientId'] ??
+                    '')
+                .toString()
+                .trim();
+          }
+        } catch (_) {}
+      }
+
+      if (myUid.isEmpty) {
+        debugPrint('[NOTIF_ACTION] ✘ ABORT: Cannot determine sender UID for reply.');
+        return;
+      }
+      debugPrint('[NOTIF_ACTION] Authenticated/Resolved as uid=$myUid (auth.currentUser=${firebaseUser?.uid})');
+
+      // ── 4. Parse payload ────────────────────────────────────────────────
+      final dynamic decodedRaw = jsonDecode(payload);
+      if (decodedRaw is! Map<String, dynamic>) {
+        debugPrint('[NOTIF_ACTION] Payload is not a valid map');
+        return;
+      }
+      final decoded = decodedRaw;
+
+      final data = decoded['data'] is Map
+          ? Map<String, dynamic>.from(decoded['data'] as Map)
+          : <String, dynamic>{};
+
+      final otherUserId = (decoded['senderId'] ??
+              data['senderId'] ??
+              data['sender_id'] ??
+              '')
+          .toString()
+          .trim();
+
+      chatId = (decoded['chatId'] ??
+              data['chatId'] ??
+              data['chat_id'] ??
+              '')
+          .toString()
+          .trim();
+
+      notifTag = (decoded['tag'] ??
+              data['tag'] ??
+              (chatId.isNotEmpty ? 'chat_$chatId' : ''))
+          .toString()
+          .trim();
+
+      debugPrint('[NOTIF_ACTION] otherUserId=$otherUserId, chatId=$chatId, notifTag=$notifTag');
+
+      if (otherUserId.isEmpty) {
+        debugPrint('[NOTIF_ACTION] Missing otherUserId');
+        return;
+      }
+
+      if (chatId.isEmpty) {
+        final ids = [myUid, otherUserId]..sort();
+        chatId = '${ids.first}_${ids.last}';
+        debugPrint('[NOTIF_ACTION] Derived chatId=$chatId');
+      }
+
+      final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+
+      // ── 5. Handle REPLY action ──────────────────────────────────────────
+      if (actionId == 'action_reply') {
+        final replyText = replyInput?.trim() ?? '';
+        if (replyText.isEmpty) {
+          debugPrint('[NOTIF_ACTION] Reply text was empty, cancelling action');
+          return;
+        }
+
+        final sentAt = Timestamp.now();
+        final messageRef = chatRef.collection('messages').doc();
+
+        // 5a. Write message & chat metadata atomically via batch
+        debugPrint('[NOTIF_ACTION] Writing message & updating chat metadata in batch to ${messageRef.path}...');
+        final batch = FirebaseFirestore.instance.batch();
+        batch.set(messageRef, {
+          'senderId': myUid,
+          'text': replyText,
+          'timestamp': sentAt,
+          'read': false,
+        });
+
+        batch.set(chatRef, {
+          'participants': [myUid, otherUserId]..sort(),
+          'lastMessageRaw': replyText,
+          'lastMessage': replyText,
+          'lastMessageTime': sentAt,
+          'unreadCount_$myUid': 0,
+          'unreadCount_$otherUserId': FieldValue.increment(1),
+        }, SetOptions(merge: true));
+
+        await batch.commit();
+        debugPrint('[NOTIF_ACTION] ✔ Message committed atomically to Firestore: "${replyText.length > 30 ? '${replyText.substring(0, 30)}...' : replyText}"');
+
+        // 5b. Record sent reply into local message thread
+        await recordSentChatMessage(chatId: chatId, text: replyText);
+
+        // 5e. Mark incoming unread messages from other user as read
+        try {
+          final unreadSnap = await chatRef
+              .collection('messages')
+              .where('senderId', isEqualTo: otherUserId)
+              .where('read', isEqualTo: false)
+              .get();
+
+          if (unreadSnap.docs.isNotEmpty) {
+            final readBatch = FirebaseFirestore.instance.batch();
+            for (final doc in unreadSnap.docs) {
+              readBatch.update(doc.reference, {'read': true});
+            }
+            await readBatch.commit();
+            debugPrint('[NOTIF_ACTION] Marked ${unreadSnap.docs.length} messages as read');
+          }
+        } catch (e) {
+          debugPrint('[NOTIF_ACTION] Non-fatal: marking unreads failed: $e');
+        }
+
+        debugPrint('[NOTIF_ACTION] ✔ Reply flow completed successfully');
+
+      // ── 6. Handle MARK AS READ action ───────────────────────────────────
+      } else if (actionId == 'action_mark_as_read') {
+        if (chatId.isNotEmpty) {
+          unawaited(clearChatNotification(chatId));
+        }
+        try {
+          final unreadSnap = await chatRef
+              .collection('messages')
+              .where('senderId', isEqualTo: otherUserId)
+              .where('read', isEqualTo: false)
+              .get();
+
+          final batch = FirebaseFirestore.instance.batch();
+          for (final doc in unreadSnap.docs) {
+            batch.update(doc.reference, {'read': true});
+          }
+          batch.set(chatRef, {
+            'unreadCount_$myUid': 0,
+          }, SetOptions(merge: true));
+
+          await batch.commit();
+          debugPrint('[NOTIF_ACTION] ✔ Chat marked as read: chatId=$chatId');
+        } catch (e) {
+          debugPrint('[NOTIF_ACTION] Error marking chat as read: $e');
+        }
+      }
+    } catch (e, stack) {
+      debugPrint('[NOTIF_ACTION] ✘ ERROR in $actionId: $e');
+      debugPrint('[NOTIF_ACTION] Stacktrace: $stack');
+    } finally {
+      // ALWAYS dismiss the notification and clear the Android RemoteInput spinner
+      try {
+        final localNotif = FlutterLocalNotificationsPlugin();
+        final resolvedId = (notificationId != 0)
+            ? notificationId
+            : (chatId.isNotEmpty ? ('chat_$chatId'.hashCode & 0x7FFFFFFF) : 0);
+        if (resolvedId != 0) {
+          await localNotif.cancel(resolvedId);
+          await localNotif.cancel(resolvedId, tag: 'chat_$chatId');
+          if (notifTag.isNotEmpty) {
+            await localNotif.cancel(resolvedId, tag: notifTag);
+          }
+          final androidPlugin = localNotif
+              .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+          await androidPlugin?.cancel(resolvedId);
+          await androidPlugin?.cancel(resolvedId, tag: 'chat_$chatId');
+          if (notifTag.isNotEmpty) {
+            await androidPlugin?.cancel(resolvedId, tag: notifTag);
+          }
+        }
+        if (chatId.isNotEmpty) {
+          await clearChatNotification(chatId);
+        }
+        debugPrint('[NOTIF_ACTION] ── END ── notification dismissed');
+      } catch (cancelErr) {
+        debugPrint('[NOTIF_ACTION] Error in finally dismissing notification: $cancelErr');
+      }
     }
   }
 
@@ -1766,7 +2570,7 @@ class NotificationService {
       if (user != null && token.isNotEmpty) {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'fcmToken': token,
-          'fcmTokens': FieldValue.arrayUnion([token]),
+          'fcmTokens': [token],
           'email': user.email,
           'displayName': user.displayName ?? '',
           'tokenUpdatedAt': FieldValue.serverTimestamp(),

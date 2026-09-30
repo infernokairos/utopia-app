@@ -43,15 +43,14 @@ async function sendPushToUser(recipientId, { title, body, data = {} }, category 
 
   let tokens = [];
 
-  if (Array.isArray(userData.fcmTokens) && userData.fcmTokens.length > 0) {
-    tokens = [...userData.fcmTokens];
+  if (userData.fcmToken && typeof userData.fcmToken === "string" && userData.fcmToken.trim().length > 0) {
+    tokens = [userData.fcmToken.trim()];
+  } else if (Array.isArray(userData.fcmTokens) && userData.fcmTokens.length > 0) {
+    const valid = userData.fcmTokens.filter((t) => typeof t === "string" && t.trim().length > 0);
+    if (valid.length > 0) {
+      tokens = [valid[valid.length - 1].trim()];
+    }
   }
-  if (userData.fcmToken && typeof userData.fcmToken === "string") {
-    tokens.unshift(userData.fcmToken);
-  }
-
-  // Remove duplicates, empty strings, and limit to recent valid tokens
-  tokens = [...new Set(tokens.filter((t) => typeof t === "string" && t.trim().length > 0))].slice(0, 3);
 
   if (tokens.length === 0) {
     logger.info(`Recipient users/${recipientId} has no registered FCM tokens`);
@@ -66,33 +65,42 @@ async function sendPushToUser(recipientId, { title, body, data = {} }, category 
     }
   }
   stringifiedData.click_action = "FLUTTER_NOTIFICATION_CLICK";
+  stringifiedData.title = title || "";
+  stringifiedData.body = resolvedBody || "";
+
+  const isChat = category === "chat" || stringifiedData.type === "chat";
 
   // Compute a deterministic collapse key / notification tag so devices deduplicate multiple deliveries
-  const collapseTag = stringifiedData.messageId ||
-                      stringifiedData.waveId ||
-                      stringifiedData.followDocId ||
-                      stringifiedData.notificationId ||
-                      (stringifiedData.type && stringifiedData.chatId ? `${stringifiedData.type}_${stringifiedData.chatId}` : null) ||
-                      (stringifiedData.type ? `${stringifiedData.type}` : "utopia_general");
+  const collapseTag = (isChat && stringifiedData.chatId)
+    ? `chat_${stringifiedData.chatId}`
+    : (stringifiedData.messageId ||
+       stringifiedData.waveId ||
+       stringifiedData.followDocId ||
+       stringifiedData.notificationId ||
+       (stringifiedData.type ? `${stringifiedData.type}` : "utopia_general"));
 
   const message = {
     tokens,
-    notification: {
-      title,
-      body,
-    },
+    ...(!isChat ? {
+      notification: {
+        title,
+        body: resolvedBody,
+      },
+    } : {}),
     data: stringifiedData,
     android: {
       priority: "high",
       collapseKey: collapseTag,
-      notification: {
-        channelId: "utopia_high_importance_v3",
-        priority: "high",
-        defaultSound: true,
-        defaultVibrateTimings: true,
-        icon: "ic_notification",
-        tag: collapseTag,
-      },
+      ...(!isChat ? {
+        notification: {
+          channelId: "utopia_high_importance_v3",
+          priority: "high",
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          icon: "ic_notification",
+          tag: collapseTag,
+        },
+      } : {}),
     },
     apns: {
       headers: {
@@ -102,7 +110,7 @@ async function sendPushToUser(recipientId, { title, body, data = {} }, category 
         aps: {
           alert: {
             title,
-            body,
+            body: resolvedBody,
           },
           sound: "default",
           badge: 1,
@@ -170,6 +178,8 @@ exports.onChatMessageCreated = onDocumentCreated(
 
     if (!recipientId) return;
 
+    const unreadCount = Number(chat[`unreadCount_${recipientId}`]) || 1;
+
     const senderSnap = await db.doc(`users/${senderId}`).get();
     const sender = senderSnap.data() || {};
     const senderName = sender.displayName || sender.email || "Student";
@@ -186,6 +196,8 @@ exports.onChatMessageCreated = onDocumentCreated(
           messageId,
           senderId,
           senderName,
+          recipientId,
+          unreadCount: String(unreadCount),
           body: preview,
         },
       },
@@ -325,7 +337,16 @@ exports.onNotificationCreated = onDocumentCreated(
 
     if (!recipientId || !body) return;
 
-    const category = (type === "event" || type === "broadcast" || type === "certificate") ? "events" : null;
+    // Direct chat notifications are handled exclusively by onChatMessageCreated
+    if (type === "chat") {
+      logger.info(`Ignoring direct chat notification doc ${event.params.notificationId} to prevent duplicate pushes`);
+      return;
+    }
+
+    // Determine notification category for user preference checks
+    const category = type === "chat" ? "chat"
+      : (type === "event" || type === "broadcast" || type === "certificate") ? "events"
+      : null;
 
     await sendPushToUser(
       recipientId,
@@ -337,12 +358,17 @@ exports.onNotificationCreated = onDocumentCreated(
           notificationId: event.params.notificationId,
           chatId: notif.chatId || "",
           senderId: notif.senderId || "",
+          senderName: notif.senderName || title || "",
+          recipientId: recipientId,
+          body: body,
+          messageId: notif.messageId || "",
         },
       },
       category,
     );
   },
 );
+
 
 // ─── TRIGGER 6: Utopia Chat (Global / Campus Community Messages) ───────────
 exports.onUniChatMessageCreated = onDocumentCreated(
