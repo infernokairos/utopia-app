@@ -1,11 +1,11 @@
 {
-    "name": "utopia_app",
-    "short_name": "utopia_app",
+    "name": "UTOPIA — Student Companion App",
+    "short_name": "UTOPIA",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#090A0C",
+    "theme_color": "#090A0C",
+    "description": "Instant attendance analytics, community study notes, campus events, assignments, and student hub.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
