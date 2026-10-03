@@ -617,9 +617,9 @@ class SciwordleService {
           }
 
           final tsA =
-              (a.data()['scoreTimestamp'] as num?)?.toInt() ?? 9223372036854775807;
+              (a.data()['scoreTimestamp'] as num?)?.toInt() ?? 9007199254740991;
           final tsB =
-              (b.data()['scoreTimestamp'] as num?)?.toInt() ?? 9223372036854775807;
+              (b.data()['scoreTimestamp'] as num?)?.toInt() ?? 9007199254740991;
           if (tsA != tsB) {
             return tsA.compareTo(tsB);
           }

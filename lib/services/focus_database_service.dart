@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -26,6 +27,9 @@ class FocusDatabaseService {
   }
 
   Future<Database> _initDatabase() async {
+    if (kIsWeb) {
+      return openDatabase(inMemoryDatabasePath);
+    }
     final dir = await getApplicationDocumentsDirectory();
     final path = p.join(dir.path, 'focus_data.db');
     return openDatabase(

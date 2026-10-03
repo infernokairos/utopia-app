@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -11,6 +13,9 @@ class CacheService {
   Database? _db;
 
   Future<Database> get db async {
+    if (kIsWeb) {
+      return openDatabase(inMemoryDatabasePath);
+    }
     _db ??= await _initDb();
     return _db!;
   }
@@ -191,6 +196,13 @@ class CacheService {
   }
 
   Future<void> saveAppSetting(String key, String value) async {
+    if (kIsWeb) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('app_setting_$key', value);
+      } catch (_) {}
+      return;
+    }
     final database = await db;
     await database.insert('app_settings', {
       'key': key,
@@ -200,6 +212,14 @@ class CacheService {
   }
 
   Future<String?> getAppSetting(String key) async {
+    if (kIsWeb) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        return prefs.getString('app_setting_$key');
+      } catch (_) {
+        return null;
+      }
+    }
     final database = await db;
     final rows = await database.query(
       'app_settings',

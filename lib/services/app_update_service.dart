@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -116,7 +117,7 @@ class AppUpdateService {
   /// Attempts to perform a native Google Play In-App Update on Android devices.
   /// Returns true if a native Play Store update was initiated or completed.
   static Future<bool> tryGooglePlayUpdate({bool isForced = false}) async {
-    if (!Platform.isAndroid) return false;
+    if (kIsWeb || !Platform.isAndroid) return false;
 
     try {
       final updateInfo = await InAppUpdate.checkForUpdate();
@@ -151,8 +152,8 @@ class AppUpdateService {
 
   /// Diagnostic check for Google Play In-App Update availability
   static Future<String> checkGooglePlayUpdateStatus() async {
-    if (!Platform.isAndroid) {
-      return 'Not on Android (current platform: ${Platform.operatingSystem})';
+    if (kIsWeb || !Platform.isAndroid) {
+      return 'Not on Android';
     }
     try {
       final info = await InAppUpdate.checkForUpdate();

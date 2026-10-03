@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -52,6 +49,16 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyBGslt8X1GGuIsqlIhwSxEi7iCNf-N6DN4',
+    appId: '1:402670858978:web:873b9416a7e07734fea4bb',
+    messagingSenderId: '402670858978',
+    projectId: 'utopia-app-33cf8',
+    authDomain: 'utopia-app-33cf8.firebaseapp.com',
+    storageBucket: 'utopia-app-33cf8.firebasestorage.app',
+    databaseURL: 'https://utopia-app-33cf8-default-rtdb.asia-southeast1.firebasedatabase.app',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBGslt8X1GGuIsqlIhwSxEi7iCNf-N6DN4',
     appId: '1:402670858978:android:873b9416a7e07734fea4bb',
@@ -60,5 +67,4 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://utopia-app-33cf8-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'utopia-app-33cf8.firebasestorage.app',
   );
-
 }

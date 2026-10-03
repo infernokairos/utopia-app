@@ -13,10 +13,10 @@ class PlatformSupport {
       !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
 
   static bool get supportsFirebase {
-    return isAndroid || isIOS;
+    return isAndroid || isIOS || kIsWeb;
   }
 
-  static bool get supportsGoogleSignIn => isAndroid || isIOS;
+  static bool get supportsGoogleSignIn => isAndroid || isIOS || kIsWeb;
 
   static bool get supportsNotifications =>
       isAndroid || isIOS || defaultTargetPlatform == TargetPlatform.macOS;

@@ -34,6 +34,31 @@ class AttendanceService {
     try {
       Map<String, dynamic> result;
 
+      if (kIsWeb) {
+        debugPrint('[AttendanceService] Running on Web. Loading cached attendance...');
+        final cached = await AttendanceCacheService.load(rollNumber);
+        if (cached != null) {
+          return {
+            ...cached.data,
+            'fromCache': true,
+            'cachedAt': cached.cachedAt,
+            'cacheAgeLabel': cached.ageLabel,
+            'serverUsed': 'cloud_cache',
+          };
+        }
+        return {
+          'overallPercentage': null,
+          'totalClasses': 0,
+          'totalAttended': 0,
+          'studentName': '',
+          'hasReport': false,
+          'subjects': [],
+          'fromCache': true,
+          'cachedAt': null,
+          'serverUsed': 'cloud_cache',
+        };
+      }
+
       debugPrint('[AttendanceService] Scraping via In-App service…');
       if (college == 'acet' || college == 'aec') {
         result = await AecAttendanceService.fetchAttendance(

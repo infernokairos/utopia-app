@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../theme/image_overlay_colors.dart';
@@ -246,6 +247,10 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                 systemNavigationBarDividerColor: Colors.transparent,
               );
 
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isDesktopWeb = kIsWeb || screenWidth > 768;
+        final navSideMargin = isDesktopWeb ? (screenWidth - 480).clamp(24.0, double.infinity) / 2 : 24.0;
+
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: systemUiStyle,
           child: Scaffold(
@@ -265,16 +270,52 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                   },
                   physics: const ClampingScrollPhysics(),
                   children: [
-                    _KeepAliveWrapper(child: _getScreen(0)),
-                    _KeepAliveWrapper(child: _getScreen(1)),
-                    _KeepAliveWrapper(child: _getScreen(2)),
-                    _KeepAliveWrapper(child: _getScreen(3)),
+                    _KeepAliveWrapper(
+                      child: isDesktopWeb
+                          ? Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 960),
+                                child: _getScreen(0),
+                              ),
+                            )
+                          : _getScreen(0),
+                    ),
+                    _KeepAliveWrapper(
+                      child: isDesktopWeb
+                          ? Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 960),
+                                child: _getScreen(1),
+                              ),
+                            )
+                          : _getScreen(1),
+                    ),
+                    _KeepAliveWrapper(
+                      child: isDesktopWeb
+                          ? Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 960),
+                                child: _getScreen(2),
+                              ),
+                            )
+                          : _getScreen(2),
+                    ),
+                    _KeepAliveWrapper(
+                      child: isDesktopWeb
+                          ? Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 960),
+                                child: _getScreen(3),
+                              ),
+                            )
+                          : _getScreen(3),
+                    ),
                   ],
                 ),
                 // Floating Material 3 Expressive Capsule Nav Bar
                 Positioned(
-                  left: 24,
-                  right: 24,
+                  left: navSideMargin,
+                  right: navSideMargin,
                   bottom: MediaQuery.paddingOf(context).bottom + 14,
                   child: AnimatedSlide(
                     duration: const Duration(milliseconds: 280),

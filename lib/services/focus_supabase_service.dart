@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -899,9 +900,9 @@ class FocusSupabaseService {
 
     try {
       Directory? downloadsDir;
-      if (Platform.isAndroid) {
+      if (!kIsWeb && Platform.isAndroid) {
         downloadsDir = Directory('/storage/emulated/0/Download');
-      } else {
+      } else if (!kIsWeb) {
         downloadsDir = await getDownloadsDirectory();
       }
 

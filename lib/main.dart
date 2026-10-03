@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'dart:ui';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -527,10 +528,11 @@ Future<AppInitializationState> _initializeApp() async {
 
     return const AppInitializationState(firebaseReady: true);
   } catch (e) {
+    debugPrint('Firebase init error: $e');
     return AppInitializationState(
       firebaseReady: false,
       blockingMessage:
-          'Firebase failed to initialize on this platform. Check the desktop Firebase configuration before building for Windows.',
+          'Firebase failed to initialize: $e',
     );
   }
 }
@@ -563,20 +565,34 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize sqflite FFI for desktop platforms
-  if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
+  if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
 
-  _initialAccentKey = await _loadInitialAccent();
-  U.applyTheme(_initialAccentKey);
+  try {
+    _initialAccentKey = await _loadInitialAccent();
+    U.applyTheme(_initialAccentKey);
+  } catch (e) {
+    debugPrint('Failed to load initial accent: $e');
+  }
+
   try {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('theme_primary_color_value', appThemeNotifier.value.primary.toARGB32());
   } catch (_) {}
-  await _loadAppToggleSettings();
+
+  try {
+    await _loadAppToggleSettings();
+  } catch (e) {
+    debugPrint('Failed to load app toggle settings: $e');
+  }
+
   appInitialization = _initializeApp();
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  if (!kIsWeb) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
   _applySystemUiForTheme(appThemeNotifier.value);
   runApp(const UtopiaApp());
 }
@@ -1165,26 +1181,47 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
     });
     try {
+      if (kIsWeb) {
+        final googleProvider = GoogleAuthProvider();
+        final credential =
+            await FirebaseAuth.instance.signInWithPopup(googleProvider);
+        if (credential.user != null) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(credential.user!.uid)
+              .set({
+            'displayName': credential.user?.displayName ?? '',
+            'email': credential.user?.email ?? '',
+            'photoUrl': credential.user?.photoURL,
+            'lastSeen': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        }
+        return;
+      }
+
       await GoogleSignIn.instance.initialize(
+        clientId: null,
         serverClientId:
             '402670858978-94eqn0qvvrtv59ijne3hn1g5flr4ahve.apps.googleusercontent.com',
       );
       final user = await GoogleSignIn.instance.authenticate();
       final auth = user.authentication;
       final cred = GoogleAuthProvider.credential(idToken: auth.idToken);
-      final credential = await FirebaseAuth.instance.signInWithCredential(cred);
+      final credential =
+          await FirebaseAuth.instance.signInWithCredential(cred);
       await FirebaseFirestore.instance
           .collection('users')
           .doc(credential.user?.uid)
           .set({
-            'displayName': credential.user?.displayName ?? '',
-            'email': credential.user?.email ?? '',
-            'photoUrl': credential.user?.photoURL,
-            'lastSeen': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+        'displayName': credential.user?.displayName ?? '',
+        'email': credential.user?.email ?? '',
+        'photoUrl': credential.user?.photoURL,
+        'lastSeen': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     } catch (e) {
+      debugPrint('Sign-in error: $e');
       setState(() {
-        _error = 'Sign-in failed. Please try again.';
+        _error = 'Sign-in error: $e';
         _loading = false;
       });
     }
