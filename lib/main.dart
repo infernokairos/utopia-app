@@ -982,49 +982,32 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
                     );
                   }
 
-                  final selectedUniversityId = 
-                      userSnapshot.data?.data()?['selectedUniversityId'] as String?;
+                  final userData = userSnapshot.data?.data();
+                  final docUniId = (userData?['selectedUniversityId'] as String? ??
+                                   userData?['universityId'] as String? ??
+                                   userData?['university'] as String? ??
+                                   '').trim();
 
-                  // If no university is selected yet, prompt selection
-                  if (userSnapshot.connectionState == ConnectionState.active && 
-                      (selectedUniversityId == null || selectedUniversityId.trim().isEmpty)) {
+                  final effectiveUniId = docUniId.isNotEmpty ? docUniId : U.cachedUniversityId.trim();
+
+                  // If no university is selected in Firestore or local cache, prompt selection
+                  if (userSnapshot.connectionState == ConnectionState.active && effectiveUniId.isEmpty) {
                     return const UniversitySelectionScreen();
                   }
 
-                  return StreamBuilder<List<UniversityModel>>(
-                    stream: UniversityService().streamUniversities(),
-                    builder: (context, uniSnapshot) {
-                      if (selectedUniversityId != null && selectedUniversityId.trim().isNotEmpty) {
-                        if (uniSnapshot.hasData) {
-                          final validUnis = uniSnapshot.data ?? [];
-                          final targetId = selectedUniversityId.trim().toLowerCase();
+                  if (effectiveUniId.isNotEmpty) {
+                    if (U.cachedUniversityId != effectiveUniId) {
+                      U.cachedUniversityId = effectiveUniId;
+                      unawaited(CacheService().saveAppSetting('cached_university_id', effectiveUniId));
+                    }
+                    final docUniName = (userData?['universityName'] as String? ?? '').trim();
+                    if (docUniName.isNotEmpty && U.cachedUniversityName != docUniName) {
+                      U.cachedUniversityName = docUniName;
+                      unawaited(CacheService().saveAppSetting('cached_university_name', docUniName));
+                    }
+                  }
 
-                          UniversityModel? matchingUni;
-                          for (final u in validUnis) {
-                            final uId = u.id.trim().toLowerCase();
-                            final uShort = u.shortName.trim().toLowerCase();
-                            if (uId == targetId || (uShort.isNotEmpty && uShort == targetId)) {
-                              matchingUni = u;
-                              break;
-                            }
-                          }
-
-                          if (matchingUni != null) {
-                            U.cachedUniversityId = matchingUni.id;
-                            U.cachedUniversityName = matchingUni.name;
-                            unawaited(CacheService().saveAppSetting('cached_university_id', matchingUni.id));
-                            unawaited(CacheService().saveAppSetting('cached_university_name', matchingUni.name));
-                          } else if (validUnis.isNotEmpty) {
-                            // Only clear if validUnis is non-empty and the user's selected university is definitely not present
-                            unawaited(UniversityService().clearUserSelectedUniversity(snapshot.data!.uid));
-                            return const UniversitySelectionScreen();
-                          }
-                        }
-                      }
-
-                      return const AppShell();
-                    },
-                  );
+                  return const AppShell();
                 },
               );
             }
