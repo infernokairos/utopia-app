@@ -16,6 +16,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:rive/rive.dart' hide Image, LinearGradient, RadialGradient;
 import 'firebase_options.dart';
 
 import 'services/cache_service.dart';
@@ -32,6 +34,7 @@ import 'models/university_model.dart';
 import 'screens/event_details_screen.dart';
 import 'services/event_service.dart';
 import 'theme/m3_expressive_theme.dart';
+import 'services/ads/app_open_ad_manager.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 late final Future<AppInitializationState> appInitialization;
@@ -564,6 +567,16 @@ Future<void> _loadAppToggleSettings() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ── AdMob (Android only): initialize native SDK before loading ads ──
+  if (AppOpenAdManager.isSupported) {
+    try {
+      await MobileAds.instance.initialize();
+    } catch (e) {
+      debugPrint('[Ads] SDK init failed: $e');
+    }
+    unawaited(AppOpenAdManager.instance.bootstrap());
+  }
+
   // Initialize sqflite FFI for desktop platforms
   if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
     sqfliteFfiInit();
@@ -587,6 +600,8 @@ void main() async {
   } catch (e) {
     debugPrint('Failed to load app toggle settings: $e');
   }
+
+  unawaited(RiveFile.initialize());
 
   appInitialization = _initializeApp();
 
@@ -1022,117 +1037,39 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
-  static const greetings = ['Hello', 'నమస్కారం', 'नमस्ते', 'こんにちは', '안녕하세요'];
-  static const greetingStepDelay = Duration(milliseconds: 65);
-  static const greetingAnimDuration = Duration(milliseconds: 45);
-  static Duration get minimumDisplayDuration {
-    final transitions = greetings.length - 1;
-    final perTransition =
-        greetingStepDelay.inMilliseconds +
-        (greetingAnimDuration.inMilliseconds * 2);
-    return Duration(milliseconds: transitions * perTransition);
-  }
+
+  static const Duration minimumDisplayDuration = Duration(milliseconds: 2200);
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  int _idx = 0;
-  late AnimationController _ac;
-  late Animation<double> _fade;
-  late Animation<double> _slide;
-
-  @override
-  void initState() {
-    super.initState();
-    _ac = AnimationController(
-      vsync: this,
-      duration: SplashScreen.greetingAnimDuration,
-    );
-    _fade = CurvedAnimation(parent: _ac, curve: Curves.easeInOut);
-    _slide = Tween<double>(
-      begin: 6,
-      end: 0,
-    ).animate(CurvedAnimation(parent: _ac, curve: Curves.easeOut));
-    _ac.forward();
-    _cycle();
-  }
-
-  Future<void> _cycle() async {
-    for (int i = 1; i < SplashScreen.greetings.length; i++) {
-      await Future.delayed(SplashScreen.greetingStepDelay);
-      if (!mounted) return;
-      await _ac.reverse();
-      setState(() => _idx = i);
-      await _ac.forward();
-    }
-  }
-
-  @override
-  void dispose() {
-    _ac.dispose();
-    super.dispose();
-  }
-
+class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: U.bg,
-      body: Stack(
-        children: [
-          // ── Content ──
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedBuilder(
-                  animation: _ac,
-                  builder: (context, _) => Opacity(
-                    opacity: _fade.value,
-                    child: Transform.translate(
-                      offset: Offset(0, _slide.value),
-                      child: Text(
-                        SplashScreen.greetings[_idx],
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 42,
-                          fontWeight: FontWeight.w700,
-                          fontStyle: FontStyle.italic,
-                          color: U.primary,
-                        ),
-                      ),
-                    ),
-                  ),
+      body: Center(
+        child: SizedBox.expand(
+          child: RiveAnimation.asset(
+            'assets/rive/utopia.riv',
+            artboard: 'Android Medium - 1',
+            animations: const ['Timeline 1'],
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+            placeHolder: Center(
+              child: Text(
+                'UTOPIA',
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: U.sub,
+                  letterSpacing: 8,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'UTOPIA',
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: U.sub,
-                    letterSpacing: 8,
-                  ),
-                ),
-                const SizedBox(height: 48),
-                AnimatedBuilder(
-                  animation: _ac,
-                  builder: (context, _) {
-                    return Container(
-                      width: 4 + (20 * _fade.value),
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: U.primary.withValues(alpha: 0.5 + (0.5 * _fade.value)),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    );
-                  },
-                ),
-              ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

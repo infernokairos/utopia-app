@@ -18,6 +18,7 @@ import '../widgets/student_sprint_loader.dart';
 import '../models/user_timetable.dart';
 import '../services/user_timetable_service.dart';
 import '../theme/m3_expressive_theme.dart';
+import '../services/ads/app_open_ad_manager.dart';
 import 'total_attendance_screen.dart';
 import 'attendance_what_if_tab.dart';
 
@@ -220,6 +221,11 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           _state = _AttendanceViewState.loaded;
         });
 
+        // Trigger preloaded App Open ad while live attendance syncs in background
+        unawaited(AppOpenAdManager.instance.showIfEligible(
+          isStillRelevant: () => mounted,
+        ));
+
         // Directly fetch fresh data from college portal in background
         unawaited(_fetchAttendanceLive(
           rollNumber: roll,
@@ -402,6 +408,14 @@ class _AttendanceScreenState extends State<AttendanceScreen>
       _fetchProgress = 0.0;
     });
 
+    // App Open ad over this loader. Fire-and-forget: the fetch below runs in
+    // parallel and is never blocked. The manager waits at most 3s and skips
+    // the ad if the loader has already gone away.
+    unawaited(AppOpenAdManager.instance.showIfEligible(
+      isStillRelevant: () =>
+          mounted && _state == _AttendanceViewState.loading,
+    ));
+
     // ── Start simulated progress timer ──
     _progressTimer?.cancel();
     final rng = math.Random();
@@ -537,6 +551,9 @@ class _AttendanceScreenState extends State<AttendanceScreen>
 
     // If attendance data is already displayed, refresh in background without full-screen loading!
     if (_attendanceData != null) {
+      unawaited(AppOpenAdManager.instance.showIfEligible(
+        isStillRelevant: () => mounted,
+      ));
       await _fetchAttendanceLive(
         rollNumber: credentials['rollNumber'] ?? '',
         password: credentials['password'] ?? '',

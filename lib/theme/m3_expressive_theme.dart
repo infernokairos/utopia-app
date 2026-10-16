@@ -465,6 +465,58 @@ class M3ThemeFactory {
         space: 1,
       ),
 
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: colorScheme.primaryContainer,
+        foregroundColor: colorScheme.onPrimaryContainer,
+        elevation: 0,
+        focusElevation: 0,
+        hoverElevation: 0,
+        disabledElevation: 0,
+        highlightElevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: M3Shapes.largeRadius),
+      ),
+
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: colorScheme.surfaceContainer,
+        indicatorColor: colorScheme.secondaryContainer,
+        elevation: 0,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          return GoogleFonts.robotoFlex(
+            fontSize: 12,
+            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
+            color: states.contains(WidgetState.selected) ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
+          );
+        }),
+      ),
+
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: colorScheme.surface,
+        indicatorColor: colorScheme.secondaryContainer,
+        elevation: 0,
+        labelType: NavigationRailLabelType.all,
+        unselectedLabelTextStyle: GoogleFonts.robotoFlex(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        selectedLabelTextStyle: GoogleFonts.robotoFlex(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: colorScheme.onSurface,
+        ),
+      ),
+
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: colorScheme.inverseSurface,
+        contentTextStyle: GoogleFonts.robotoFlex(
+          color: colorScheme.onInverseSurface,
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: M3Shapes.extraSmallRadius),
+        behavior: SnackBarBehavior.floating,
+      ),
+
       iconTheme: IconThemeData(color: sub),
     );
   }

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme/m3_expressive_theme.dart';
 
 enum UtopiaSnackBarTone { success, error, info }
 
@@ -41,14 +42,14 @@ void showUtopiaSnackBar(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       duration: actionLabel != null ? const Duration(milliseconds: 4000) : const Duration(milliseconds: 2200),
       content: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: M3Shapes.largeRadius,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: backgroundColor,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: M3Shapes.largeRadius,
               border: Border.all(color: borderColor, width: 0.5),
               boxShadow: [
                 BoxShadow(
@@ -65,7 +66,7 @@ void showUtopiaSnackBar(
                 Expanded(
                   child: Text(
                     message,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.robotoFlex(
                       color: textColor,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -86,13 +87,13 @@ void showUtopiaSnackBar(
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       backgroundColor: toneColor.withValues(alpha: 0.12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: M3Shapes.smallRadius,
                       ),
                       foregroundColor: toneColor,
                     ),
                     child: Text(
                       actionLabel,
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.robotoFlex(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),

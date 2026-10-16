@@ -34,6 +34,7 @@ import 'utopia_section_screen.dart';
 import 'whatsapp_profile_crop_screen.dart';
 import '../theme/m3_expressive_theme.dart';
 import '../widgets/app_motion.dart';
+import '../services/ads/consent_service.dart';
 
 const List<String> kBTechBranches = [
   'Agri Engg',
@@ -603,6 +604,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: 'Feedback & Support',
                   value: 'Bugs & features',
                   onTap: _openRaiseIssue,
+                ),
+                ValueListenableBuilder<bool>(
+                  valueListenable: ConsentService.instance.privacyOptionsRequired,
+                  builder: (context, isRequired, _) {
+                    if (!isRequired) return const SizedBox.shrink();
+                    return _FlatSettingsRow(
+                      icon: Icons.privacy_tip_outlined,
+                      color: theme.sub,
+                      title: 'Privacy Settings',
+                      value: 'Ad consent',
+                      onTap: () async {
+                        final ok = await ConsentService.instance.showPrivacyOptionsForm();
+                        if (!ok && context.mounted) {
+                          U.showSnackBar(
+                            context,
+                            'Privacy settings are not available at this time.',
+                            icon: Icons.info_outline_rounded,
+                            iconColor: U.sub,
+                          );
+                        }
+                      },
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 36),

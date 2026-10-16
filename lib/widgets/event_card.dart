@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../main.dart';
 import '../models/event_model.dart';
 import '../screens/event_details_screen.dart';
+import '../theme/m3_expressive_theme.dart';
+import 'app_motion.dart';
 
 class EventCard extends StatelessWidget {
   final EventModel event;
@@ -49,11 +50,11 @@ class EventCard extends StatelessWidget {
     }
 
     if (isLarge) {
-      return GestureDetector(
+      return M3Pressable(
         onTap: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => EventDetailsScreen(event: event)),
+            buildForwardRoute(EventDetailsScreen(event: event)),
           );
           if (onReturn != null) {
             onReturn!();
@@ -63,7 +64,7 @@ class EventCard extends StatelessWidget {
           width: 280.0,
           decoration: BoxDecoration(
             color: U.card,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: M3Shapes.cardRadius,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: isDark ? 0.08 : 0.03),
@@ -223,11 +224,11 @@ class EventCard extends StatelessWidget {
       );
     } else {
       // Side-by-side split layout for vertical list events
-      return GestureDetector(
+      return M3Pressable(
         onTap: () async {
           await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => EventDetailsScreen(event: event)),
+            buildForwardRoute(EventDetailsScreen(event: event)),
           );
           if (onReturn != null) {
             onReturn!();
@@ -236,7 +237,7 @@ class EventCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: U.card,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: M3Shapes.largeRadius,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: isDark ? 0.06 : 0.02),

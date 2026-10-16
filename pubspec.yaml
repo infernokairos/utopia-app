@@ -59,6 +59,8 @@ dependencies:
   appflowy_editor: ^6.2.0
   in_app_update: ^5.0.0
   sensors_plus: ^7.1.0
+  google_mobile_ads: ^9.1.0
+  rive: ^0.13.20
 
 dev_dependencies:
   flutter_test:
@@ -84,6 +86,7 @@ flutter:
     - assets/voices/
     - assets/logos/
     - assets/words/
+    - assets/rive/
   fonts:
     - family: OrangeAvenue
       fonts:
