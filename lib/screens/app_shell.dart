@@ -1,21 +1,17 @@
-import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import '../main.dart';
-import '../theme/image_overlay_colors.dart';
 import 'package:flutter/services.dart';
-import 'people_screen.dart';
-import 'focus_screen.dart';
-import 'profile_screen.dart';
-import 'university_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/m3_expressive_theme.dart';
-import '../widgets/app_motion.dart';
+
+import '../main.dart';
 import '../services/app_update_service.dart';
+import '../theme/m3_expressive_theme.dart';
+import 'focus_screen.dart';
+import 'people_screen.dart';
+import 'profile_screen.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -30,14 +26,12 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin {
+class _AppShellState extends State<AppShell> {
   int _index = 0;
   late final PageController _pageController;
-  late final AnimationController _gradientController;
 
   final List<Widget?> _screens = [
     const FocusScreen(),
-    null,
     null,
     null,
   ];
@@ -49,9 +43,6 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
           _screens[index] = const PeopleScreen();
           break;
         case 2:
-          _screens[index] = const UniversityScreen();
-          break;
-        case 3:
           _screens[index] = const ProfileScreen();
           break;
       }
@@ -63,10 +54,6 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _index);
-    _gradientController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 15),
-    )..repeat();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
         await AppUpdateService.checkForUpdate(context);
@@ -92,7 +79,10 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
         return;
       }
 
-      final doc = await FirebaseFirestore.instance.collection('config').doc('app_config').get();
+      final doc = await FirebaseFirestore.instance
+          .collection('config')
+          .doc('app_config')
+          .get();
 
       final eventId = doc.data()?['popup_event_id'] as String?;
       if (eventId != null && eventId.isNotEmpty) {
@@ -109,10 +99,15 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                   decoration: BoxDecoration(
                     color: U.surfaceContainerHigh,
                     borderRadius: M3Shapes.extraLargeRadius,
-                    border: Border.all(color: U.outlineVariant.withValues(alpha: 0.5), width: 1.0),
+                    border: Border.all(
+                      color: U.outlineVariant.withValues(alpha: 0.5),
+                      width: 1.0,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: appThemeNotifier.value.isDark ? 0.4 : 0.12),
+                        color: Colors.black.withValues(
+                          alpha: appThemeNotifier.value.isDark ? 0.4 : 0.12,
+                        ),
                         blurRadius: 32,
                         offset: const Offset(0, 12),
                         spreadRadius: 2,
@@ -129,14 +124,18 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                           color: U.primaryContainer.withValues(alpha: 0.7),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.auto_awesome_rounded, color: U.primary, size: 32),
+                        child: Icon(
+                          Icons.auto_awesome_rounded,
+                          color: U.primary,
+                          size: 32,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       Text(
                         'Share UTOPIA',
-                        style: GoogleFonts.robotoFlex(
+                        style: GoogleFonts.inter(
                           color: U.text,
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.3,
                         ),
@@ -145,7 +144,11 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                       const SizedBox(height: 10),
                       Text(
                         'Love using UTOPIA? Help your friends elevate their university experience by inviting them to the app!',
-                        style: GoogleFonts.robotoFlex(color: U.sub, fontSize: 14, height: 1.45),
+                        style: GoogleFonts.inter(
+                          color: U.sub,
+                          fontSize: 14,
+                          height: 1.45,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 28),
@@ -156,11 +159,20 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: U.text,
                                 side: BorderSide(color: U.outlineVariant),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: M3Shapes.fullRadius),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               onPressed: () => Navigator.pop(context),
-                              child: Text('Later', style: GoogleFonts.robotoFlex(fontWeight: FontWeight.w600)),
+                              child: Text(
+                                'Later',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -169,18 +181,28 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                               style: FilledButton.styleFrom(
                                 backgroundColor: U.primary,
                                 foregroundColor: U.colorScheme.onPrimary,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: M3Shapes.fullRadius),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               onPressed: () {
                                 SharePlus.instance.share(
                                   ShareParams(
-                                    text: 'Join me on UTOPIA! 🚀 The productivity platform.\n\nhttps://inferalis.space/download-utopia',
+                                    text:
+                                        'Join me on UTOPIA! 🚀 The productivity platform.\n\nhttps://inferalis.space/download-utopia',
                                   ),
                                 );
                                 Navigator.pop(context);
                               },
-                              child: Text('Share App', style: GoogleFonts.robotoFlex(fontWeight: FontWeight.w600)),
+                              child: Text(
+                                'Share App',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -202,7 +224,6 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   @override
   void dispose() {
     _pageController.dispose();
-    _gradientController.dispose();
     super.dispose();
   }
 
@@ -210,6 +231,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
     if (nextIndex == _index) {
       return;
     }
+    HapticFeedback.selectionClick();
     setState(() => _index = nextIndex);
     if (_pageController.hasClients) {
       _pageController.jumpToPage(nextIndex);
@@ -218,245 +240,61 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-
     return ValueListenableBuilder<AppTheme>(
       valueListenable: appThemeNotifier,
       builder: (context, theme, _) {
-        final timeSlot = ImageOverlayColors.getTimeSlot();
-        final isDarkSky = timeSlot == 'evening' || timeSlot == 'night';
-        final isDarkTheme = theme.isDark;
-        final useLightStatusBarIcons = isDarkSky || isDarkTheme;
-
-        final systemUiStyle = _index != 0
-            ? SystemUiOverlayStyle(
-                statusBarColor: Colors.transparent,
-                statusBarIconBrightness: theme.isDark ? Brightness.light : Brightness.dark,
-                statusBarBrightness: theme.isDark ? Brightness.dark : Brightness.light,
-                systemNavigationBarColor: theme.surface,
-                systemNavigationBarIconBrightness: theme.isDark ? Brightness.light : Brightness.dark,
-                systemNavigationBarDividerColor: Colors.transparent,
-                systemNavigationBarContrastEnforced: false,
-              )
-            : SystemUiOverlayStyle(
-                statusBarColor: Colors.transparent,
-                statusBarIconBrightness: useLightStatusBarIcons ? Brightness.light : Brightness.dark,
-                statusBarBrightness: useLightStatusBarIcons ? Brightness.dark : Brightness.light,
-                systemNavigationBarColor: theme.surface,
-                systemNavigationBarIconBrightness: isDarkTheme ? Brightness.light : Brightness.dark,
-                systemNavigationBarDividerColor: Colors.transparent,
-              );
-
-        final screenWidth = MediaQuery.of(context).size.width;
+        final cs = theme.colorScheme;
+        final isDark = theme.isDark;
+        final screenWidth = MediaQuery.sizeOf(context).width;
         final isDesktopWeb = kIsWeb || screenWidth > 768;
-        final navSideMargin = isDesktopWeb ? (screenWidth - 480).clamp(24.0, double.infinity) / 2 : 24.0;
+
+        final systemUiStyle = SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+          systemNavigationBarColor: cs.surfaceContainerLow,
+          systemNavigationBarIconBrightness:
+              isDark ? Brightness.light : Brightness.dark,
+          systemNavigationBarDividerColor: Colors.transparent,
+          systemNavigationBarContrastEnforced: false,
+        );
+
+        Widget wrapPage(Widget child) {
+          return _KeepAliveWrapper(
+            child: isDesktopWeb
+                ? Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 960),
+                      child: child,
+                    ),
+                  )
+                : child,
+          );
+        }
 
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: systemUiStyle,
           child: Scaffold(
-            backgroundColor: theme.bg,
-            extendBody: true,
-            body: Stack(
+            backgroundColor: cs.surfaceContainerLowest,
+            extendBody: false,
+            body: PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                if (_index != index) {
+                  setState(() => _index = index);
+                }
+              },
+              physics: const ClampingScrollPhysics(),
               children: [
-                Positioned.fill(
-                  child: _buildMeshGradient(theme),
-                ),
-                PageView(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    if (_index != index) {
-                      setState(() => _index = index);
-                    }
-                  },
-                  physics: const ClampingScrollPhysics(),
-                  children: [
-                    _KeepAliveWrapper(
-                      child: isDesktopWeb
-                          ? Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 960),
-                                child: _getScreen(0),
-                              ),
-                            )
-                          : _getScreen(0),
-                    ),
-                    _KeepAliveWrapper(
-                      child: isDesktopWeb
-                          ? Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 960),
-                                child: _getScreen(1),
-                              ),
-                            )
-                          : _getScreen(1),
-                    ),
-                    _KeepAliveWrapper(
-                      child: isDesktopWeb
-                          ? Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 960),
-                                child: _getScreen(2),
-                              ),
-                            )
-                          : _getScreen(2),
-                    ),
-                    _KeepAliveWrapper(
-                      child: isDesktopWeb
-                          ? Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 960),
-                                child: _getScreen(3),
-                              ),
-                            )
-                          : _getScreen(3),
-                    ),
-                  ],
-                ),
-                // Floating Material 3 Expressive Capsule Nav Bar
-                Positioned(
-                  left: navSideMargin,
-                  right: navSideMargin,
-                  bottom: MediaQuery.paddingOf(context).bottom + 14,
-                  child: AnimatedSlide(
-                    duration: const Duration(milliseconds: 280),
-                    curve: M3Motion.emphasizedDecelerate,
-                    offset: isKeyboardOpen ? const Offset(0, 1.5) : Offset.zero,
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: isKeyboardOpen ? 0.0 : 1.0,
-                      child: Builder(
-                        builder: (context) {
-                          final isDark = appThemeNotifier.value.isDark;
-                          final dockBg = isDark
-                              ? const Color(0xFF0D0D0E).withValues(alpha: 0.90)
-                              : U.card.withValues(alpha: 0.94);
-                          final dockBorder = isDark
-                              ? const Color(0xFF27272A).withValues(alpha: 0.6)
-                              : U.border.withValues(alpha: 0.8);
-                          final dockShadow = isDark
-                              ? Colors.black.withValues(alpha: 0.40)
-                              : Colors.black.withValues(alpha: 0.08);
-
-                          return ClipRRect(
-                            borderRadius: M3Shapes.fullRadius,
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                height: 72,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: dockBg,
-                                  borderRadius: M3Shapes.fullRadius,
-                                  border: Border.all(
-                                    color: dockBorder,
-                                    width: 0.8,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: dockShadow,
-                                      blurRadius: 24,
-                                      offset: const Offset(0, 8),
-                                      spreadRadius: -2,
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    Expanded(
-                                      child: _NavItem(
-                                        icon: Icons.home_outlined,
-                                        activeIcon: Icons.home_rounded,
-                                        label: 'Home',
-                                        isActive: _index == 0,
-                                        isDark: isDark,
-                                        onTap: () => _setIndex(0),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: _NavItem(
-                                        icon: Icons.groups_outlined,
-                                        activeIcon: Icons.groups_rounded,
-                                        label: 'People',
-                                        isActive: _index == 1,
-                                        isDark: isDark,
-                                        onTap: () => _setIndex(1),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: _NavItem(
-                                        icon: Icons.school_outlined,
-                                        activeIcon: Icons.school_rounded,
-                                        label: 'Campus',
-                                        isActive: _index == 2,
-                                        isDark: isDark,
-                                        onTap: () => _setIndex(2),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: _NavItem(
-                                        icon: Icons.person_outline_rounded,
-                                        activeIcon: Icons.person_rounded,
-                                        label: 'Profile',
-                                        isActive: _index == 3,
-                                        isDark: isDark,
-                                        onTap: () => _setIndex(3),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
+                wrapPage(_getScreen(0)),
+                wrapPage(_getScreen(1)),
+                wrapPage(_getScreen(2)),
               ],
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMeshGradient(AppTheme theme) {
-    return AnimatedBuilder(
-      animation: _gradientController,
-      builder: (context, _) {
-        final value = _gradientController.value;
-        final dx1 = cos(value * 2 * pi);
-        final dy1 = sin(value * 2 * pi);
-
-        final alpha1 = (0.05 + 0.02 * sin(value * 2 * pi)).clamp(0.0, 1.0);
-
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.bg,
-          ),
-          child: Stack(
-            children: [
-              // Subtle dark ambient grayscale glow
-              Positioned(
-                top: -200 + dy1 * 120,
-                left: -200 + dx1 * 120,
-                width: 600,
-                height: 600,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: alpha1),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            bottomNavigationBar: _SharpBottomNavBar(
+              currentIndex: _index,
+              onTap: _setIndex,
+            ),
           ),
         );
       },
@@ -464,73 +302,110 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
   }
 }
 
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final bool isActive;
-  final bool isDark;
-  final VoidCallback onTap;
+/// Standard sharp rectangular bottom navigation bar with icon background highlight.
+class _SharpBottomNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
 
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.isActive,
-    required this.isDark,
+  const _SharpBottomNavBar({
+    required this.currentIndex,
     required this.onTap,
   });
 
+  static const _items = [
+    (
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'Home',
+    ),
+    (
+      icon: Icons.groups_outlined,
+      activeIcon: Icons.groups_rounded,
+      label: 'People',
+    ),
+    (
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person_rounded,
+      label: 'Profile',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return M3Pressable(
-      onTap: onTap,
-      scaleFactor: 0.92,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Standard Material 3 Icon Indicator Pill (60 x 32 dp)
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 260),
-              curve: M3Motion.expressiveCurve,
-              width: isActive ? 60 : 36,
-              height: 32,
-              decoration: BoxDecoration(
-                color: isActive ? U.primaryContainer : Colors.transparent,
-                borderRadius: M3Shapes.fullRadius,
-              ),
-              child: Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-                  child: Icon(
-                    isActive ? activeIcon : icon,
-                    key: ValueKey<bool>(isActive),
-                    color: isActive
-                        ? U.onPrimaryContainer
-                        : U.sub,
-                    size: 24,
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        border: Border(
+          top: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.45),
+            width: 0.8,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 68,
+          child: Row(
+            children: List.generate(_items.length, (i) {
+              final item = _items[i];
+              final isActive = i == currentIndex;
+
+              return Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onTap(i),
+                    borderRadius: BorderRadius.zero,
+                    splashColor: cs.primary.withValues(alpha: 0.08),
+                    highlightColor: cs.primary.withValues(alpha: 0.04),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutCubic,
+                          width: isActive ? 58 : 36,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? cs.primaryContainer
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              isActive ? item.activeIcon : item.icon,
+                              size: 22,
+                              color: isActive
+                                  ? cs.onPrimaryContainer
+                                  : cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            fontWeight:
+                                isActive ? FontWeight.w600 : FontWeight.w500,
+                            color: isActive
+                                ? cs.onSurface
+                                : cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 3),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              style: GoogleFonts.robotoFlex(
-                fontSize: 11,
-                fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
-                color: isActive
-                    ? U.text
-                    : U.sub,
-                letterSpacing: 0.2,
-              ),
-              child: Text(label),
-            ),
-          ],
+              );
+            }),
+          ),
         ),
       ),
     );
@@ -545,7 +420,8 @@ class _KeepAliveWrapper extends StatefulWidget {
   State<_KeepAliveWrapper> createState() => _KeepAliveWrapperState();
 }
 
-class _KeepAliveWrapperState extends State<_KeepAliveWrapper> with AutomaticKeepAliveClientMixin {
+class _KeepAliveWrapperState extends State<_KeepAliveWrapper>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 

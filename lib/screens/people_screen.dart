@@ -125,17 +125,6 @@ class _PeopleScreenState extends State<PeopleScreen> {
     } catch (_) {}
   }
 
-  Future<void> _toggleShowcaseMinimized() async {
-    final next = !_isShowcaseMinimized;
-    setState(() {
-      _isShowcaseMinimized = next;
-    });
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('showcase_card_minimized', next);
-    } catch (_) {}
-  }
-
   void _scrollToTop() {
     HapticFeedback.lightImpact();
     if (_scrollController.hasClients) {
@@ -265,9 +254,11 @@ class _PeopleScreenState extends State<PeopleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: cs.surfaceContainerLowest,
       body: SafeArea(
+        bottom: false,
         child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: _usersStream,
           builder: (context, userSnap) {
@@ -376,121 +367,95 @@ class _PeopleScreenState extends State<PeopleScreen> {
                 physics: const BouncingScrollPhysics(),
                 keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 slivers: [
-                  // ── 1. Hyper Material 3 Header Bar ──────────────────────────────
+                  // ── 1. Interceptor-style Minimal Header Bar ──────────────────────
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 16, 10),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 16, 12),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'People',
-                                style: GoogleFonts.robotoFlex(
-                                  color: U.text,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.6,
-                                ),
-                              ).animate().fadeIn(duration: 250.ms).slideX(begin: -0.05, end: 0),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
-                                    decoration: BoxDecoration(
-                                      color: U.surfaceContainerHighest,
-                                      borderRadius: M3Shapes.fullRadius,
-                                      border: Border.all(
-                                        color: U.outlineVariant.withValues(alpha: 0.3),
-                                        width: 0.6,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text.rich(
+                                  TextSpan(
+                                    text: 'people',
+                                    style: GoogleFonts.inter(
+                                      color: cs.onSurface,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -1.2,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: '.',
+                                        style: TextStyle(color: cs.primary),
                                       ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (activeVibesMap.isNotEmpty) ...[
-                                          _RadarPingDot(),
-                                          const SizedBox(width: 6),
-                                        ],
-                                        Text(
-                                          totalCount > 0 ? '$totalCount campus members' : 'Campus directory',
-                                          style: GoogleFonts.robotoFlex(
-                                            color: U.sub,
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ).animate().fadeIn(duration: 300.ms, delay: 50.ms).scaleXY(begin: 0.9, end: 1.0),
-                                ],
-                              ),
-                            ],
+                                    ],
+                                  ),
+                                  maxLines: 1,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  totalCount > 0
+                                      ? '$totalCount members'
+                                      : 'Campus directory',
+                                  style: GoogleFonts.inter(
+                                    color: cs.onSurfaceVariant,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          const Spacer(),
 
-                          // Friends / Requests shortcut button
+                          // Friends / Requests icon button
                           StreamBuilder<int>(
-                            stream: _followService.pendingRequestsCountStream(_currentUid),
+                            stream: _followService.pendingRequestsCountStream(
+                              _currentUid,
+                            ),
                             builder: (context, reqSnap) {
                               final reqCount = reqSnap.data ?? 0;
-                              return M3Pressable(
-                                onTap: () {
-                                  _searchFocusNode.unfocus();
-                                  Navigator.of(context).push(
-                                    buildForwardRoute(const FriendsScreen()),
-                                  );
-                                },
-                                borderRadius: BorderRadius.circular(16),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Container(
-                                      width: 38,
-                                      height: 38,
-                                      decoration: BoxDecoration(
-                                        color: U.surfaceContainerHigh,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: U.outlineVariant.withValues(alpha: 0.35),
-                                          width: 0.8,
+                              return Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  IconButton(
+                                    onPressed: () {
+                                      _searchFocusNode.unfocus();
+                                      Navigator.of(context).push(
+                                        buildForwardRoute(const FriendsScreen()),
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.people_outline_rounded,
+                                    ),
+                                    color: cs.onSurfaceVariant,
+                                    iconSize: 23,
+                                    tooltip: 'Friends',
+                                  ),
+                                  if (reqCount > 0)
+                                    Positioned(
+                                      right: 8,
+                                      top: 8,
+                                      child: Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: cs.primary,
+                                          shape: BoxShape.circle,
                                         ),
                                       ),
-                                      child: Icon(Icons.people_alt_outlined, color: U.text, size: 18),
                                     ),
-                                    if (reqCount > 0)
-                                      Positioned(
-                                        right: -2,
-                                        top: -2,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                          decoration: BoxDecoration(
-                                            color: U.primary,
-                                            borderRadius: M3Shapes.fullRadius,
-                                            border: Border.all(color: U.surface, width: 1.5),
-                                          ),
-                                          child: Text(
-                                            reqCount > 99 ? '99+' : '$reqCount',
-                                            style: GoogleFonts.robotoFlex(
-                                              color: U.getContrastColor(U.primary),
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                          ),
-                                        ).animate().scale(curve: Curves.elasticOut, duration: 400.ms),
-                                      ),
-                                  ],
-                                ),
+                                ],
                               );
                             },
                           ),
-                          const SizedBox(width: 6),
 
-                          // View Switcher (Grid vs List) with spring rotating animation
-                          M3Pressable(
-                            onTap: () {
+                          // View Switcher (Grid vs List)
+                          IconButton(
+                            onPressed: () {
                               HapticFeedback.selectionClick();
                               _searchFocusNode.unfocus();
                               setState(() {
@@ -501,245 +466,118 @@ class _PeopleScreenState extends State<PeopleScreen> {
                               SharedPreferences.getInstance().then((prefs) {
                                 prefs.setString(
                                   'people_view_mode',
-                                  _viewMode == PeopleViewMode.grid ? 'grid' : 'list',
+                                  _viewMode == PeopleViewMode.grid
+                                      ? 'grid'
+                                      : 'list',
                                 );
                               }).catchError((_) {});
                             },
-                            borderRadius: BorderRadius.circular(12),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              curve: Curves.easeOutCubic,
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: U.surfaceContainerHigh,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: U.outlineVariant.withValues(alpha: 0.35),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 220),
-                                transitionBuilder: (child, anim) => RotationTransition(
-                                  turns: Tween<double>(begin: 0.75, end: 1.0).animate(anim),
-                                  child: ScaleTransition(scale: anim, child: child),
-                                ),
-                                child: Icon(
-                                  _viewMode == PeopleViewMode.grid
-                                      ? Icons.view_agenda_rounded
-                                      : Icons.grid_view_rounded,
-                                  key: ValueKey(_viewMode),
-                                  color: U.text,
-                                  size: 18,
-                                ),
-                              ),
+                            icon: Icon(
+                              _viewMode == PeopleViewMode.grid
+                                  ? Icons.view_agenda_outlined
+                                  : Icons.grid_view_outlined,
                             ),
+                            color: cs.onSurfaceVariant,
+                            iconSize: 22,
+                            tooltip: 'Switch view',
                           ),
-                          const SizedBox(width: 6),
 
-                          // Graph View Toggle Button (full-screen Obsidian-style link graph)
-                          Tooltip(
-                            message: 'Link Graph View',
-                            child: M3Pressable(
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                _searchFocusNode.unfocus();
-                                Navigator.of(context).push(
-                                  buildGraphCrossfadeRoute(const LinkGraphScreen()),
-                                );
-                              },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: U.surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: U.outlineVariant.withValues(alpha: 0.35),
-                                    width: 0.8,
-                                  ),
+                          // Link Graph button
+                          IconButton(
+                            onPressed: () {
+                              HapticFeedback.selectionClick();
+                              _searchFocusNode.unfocus();
+                              Navigator.of(context).push(
+                                buildGraphCrossfadeRoute(
+                                  const LinkGraphScreen(),
                                 ),
-                                child: Icon(
-                                  Icons.hub_outlined,
-                                  color: U.text,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
+                              );
+                            },
+                            icon: const Icon(Icons.hub_outlined),
+                            color: cs.onSurfaceVariant,
+                            iconSize: 22,
+                            tooltip: 'Link Graph View',
                           ),
                         ],
                       ),
                     ),
                   ),
 
-                  // ── 1.5. Project Showcase Top Banner Card (Aditya colleges only) ────────
-                  if (U.isAditya)
+                  // ── 1.5. Clean Stroke-free Projects Banner (Aditya colleges only) ──
+                  if (U.isAditya && !_isShowcaseMinimized)
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
-                        child: _isShowcaseMinimized
-                          ? Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: U.surfaceContainerHigh,
-                                borderRadius: M3Shapes.fullRadius,
-                                border: Border.all(
-                                  color: U.outlineVariant.withValues(alpha: 0.35),
-                                  width: 0.8,
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              _searchFocusNode.unfocus();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const ProjectsFeedScreen(),
                                 ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Ink(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                color: cs.surfaceContainer,
+                                borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.rocket_launch_rounded, color: U.primary, size: 16),
-                                  const SizedBox(width: 8),
+                                  Icon(
+                                    Icons.rocket_launch_outlined,
+                                    color: cs.primary,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 14),
                                   Expanded(
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        _searchFocusNode.unfocus();
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(builder: (_) => const ProjectsFeedScreen()),
-                                        );
-                                      },
-                                      child: Text(
-                                        'Project Showcase',
-                                        style: GoogleFonts.robotoFlex(
-                                          color: U.text,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Projects',
+                                          style: GoogleFonts.inter(
+                                            color: cs.onSurface,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: -0.3,
+                                          ),
                                         ),
-                                      ),
+                                        const SizedBox(height: 1),
+                                        Text(
+                                          'Explore campus builds',
+                                          style: GoogleFonts.inter(
+                                            color: cs.onSurfaceVariant
+                                                .withValues(alpha: 0.7),
+                                            fontSize: 12.5,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      _searchFocusNode.unfocus();
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(builder: (_) => const ProjectsFeedScreen()),
-                                      );
-                                    },
-                                    child: Icon(Icons.arrow_forward_ios_rounded, color: U.sub, size: 12),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  GestureDetector(
-                                    onTap: _toggleShowcaseMinimized,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: U.surfaceContainerHighest.withValues(alpha: 0.5),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(Icons.keyboard_arrow_down_rounded, color: U.sub, size: 16),
-                                    ),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: cs.onSurfaceVariant
+                                        .withValues(alpha: 0.6),
+                                    size: 20,
                                   ),
                                 ],
                               ),
-                            )
-                          : M3Pressable(
-                              onTap: () {
-                                _searchFocusNode.unfocus();
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => const ProjectsFeedScreen()),
-                                );
-                              },
-                              borderRadius: M3Shapes.largeRadius,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      U.primary.withValues(alpha: appThemeNotifier.value.isDark ? 0.18 : 0.12),
-                                      U.teal.withValues(alpha: appThemeNotifier.value.isDark ? 0.12 : 0.08),
-                                    ],
-                                  ),
-                                  borderRadius: M3Shapes.largeRadius,
-                                  border: Border.all(
-                                    color: U.primary.withValues(alpha: 0.3),
-                                    width: 1.0,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        color: U.primary.withValues(alpha: 0.2),
-                                        borderRadius: M3Shapes.mediumRadius,
-                                      ),
-                                      child: Center(
-                                        child: Icon(Icons.rocket_launch_rounded, color: U.primary, size: 22),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Text(
-                                                'Project Showcase',
-                                                style: GoogleFonts.robotoFlex(
-                                                  color: U.text,
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w800,
-                                                  letterSpacing: -0.2,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: U.primary,
-                                                  borderRadius: M3Shapes.fullRadius,
-                                                ),
-                                                child: Text(
-                                                  'NEW',
-                                                  style: GoogleFonts.robotoFlex(
-                                                    color: U.getContrastColor(U.primary),
-                                                    fontSize: 9.5,
-                                                    fontWeight: FontWeight.w900,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            'Explore apps, hardware & research by campus peers',
-                                            style: GoogleFonts.robotoFlex(
-                                              color: U.sub,
-                                              fontSize: 12,
-                                              height: 1.25,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: _toggleShowcaseMinimized,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(5),
-                                        decoration: BoxDecoration(
-                                          color: U.card.withValues(alpha: 0.6),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(color: U.outlineVariant.withValues(alpha: 0.3)),
-                                        ),
-                                        child: Icon(Icons.keyboard_arrow_up_rounded, color: U.sub, size: 16),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
 
-                  // ── 2. Hyper Material 3 Search Bar ──────────────────────────────
+                  // ── 2. Search Bar (Preserved Pill Style with Interceptor Tokens) ──
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
@@ -749,31 +587,28 @@ class _PeopleScreenState extends State<PeopleScreen> {
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 220),
                               curve: Curves.easeOutCubic,
-                              height: 52,
+                              height: 50,
                               decoration: BoxDecoration(
                                 color: _isSearchFocused
-                                    ? U.surfaceContainerHighest
-                                    : U.surfaceContainerHigh,
+                                    ? cs.surfaceContainerHighest
+                                    : cs.surfaceContainerHigh,
                                 borderRadius: M3Shapes.fullRadius,
                                 border: Border.all(
                                   color: _isSearchFocused
-                                      ? U.primary
-                                      : U.outlineVariant.withValues(alpha: 0.35),
-                                  width: _isSearchFocused ? 1.6 : 0.8,
+                                      ? cs.primary
+                                      : Colors.transparent,
+                                  width: 1.4,
                                 ),
                               ),
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: Row(
                                 children: [
-                                  AnimatedScale(
-                                    scale: _isSearchFocused ? 1.15 : 1.0,
-                                    duration: const Duration(milliseconds: 180),
-                                    curve: Curves.easeOutBack,
-                                    child: Icon(
-                                      Icons.search_rounded,
-                                      color: _isSearchFocused ? U.primary : U.sub,
-                                      size: 22,
-                                    ),
+                                  Icon(
+                                    Icons.search_rounded,
+                                    color: _isSearchFocused
+                                        ? cs.primary
+                                        : cs.onSurfaceVariant,
+                                    size: 21,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -782,16 +617,17 @@ class _PeopleScreenState extends State<PeopleScreen> {
                                       focusNode: _searchFocusNode,
                                       textInputAction: TextInputAction.search,
                                       onSubmitted: (_) => _searchFocusNode.unfocus(),
-                                      cursorColor: U.primary,
-                                      style: GoogleFonts.robotoFlex(
-                                        color: U.text,
+                                      cursorColor: cs.primary,
+                                      style: GoogleFonts.inter(
+                                        color: cs.onSurface,
                                         fontSize: 14.5,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                       decoration: InputDecoration(
                                         hintText: 'Search people, branch, bio...',
-                                        hintStyle: GoogleFonts.robotoFlex(
-                                          color: U.sub.withValues(alpha: 0.75),
+                                        hintStyle: GoogleFonts.inter(
+                                          color: cs.onSurfaceVariant
+                                              .withValues(alpha: 0.7),
                                           fontSize: 14,
                                           fontWeight: FontWeight.w400,
                                         ),
@@ -805,7 +641,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
                                     ),
                                   ),
                                   if (_searchController.text.isNotEmpty)
-                                    M3Pressable(
+                                    GestureDetector(
                                       onTap: () {
                                         HapticFeedback.lightImpact();
                                         _searchController.clear();
@@ -814,16 +650,16 @@ class _PeopleScreenState extends State<PeopleScreen> {
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
                                         decoration: BoxDecoration(
-                                          color: U.surfaceContainerLowest,
+                                          color: cs.surfaceContainerLowest,
                                           shape: BoxShape.circle,
                                         ),
                                         child: Icon(
                                           Icons.close_rounded,
-                                          color: U.sub,
+                                          color: cs.onSurfaceVariant,
                                           size: 16,
                                         ),
                                       ),
-                                    ).animate().scale(curve: Curves.easeOutBack, duration: 180.ms),
+                                    ),
                                 ],
                               ),
                             ),
@@ -840,19 +676,22 @@ class _PeopleScreenState extends State<PeopleScreen> {
                                 setState(() {});
                               },
                               style: TextButton.styleFrom(
-                                foregroundColor: U.primary,
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                foregroundColor: cs.primary,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
                                 'Cancel',
-                                style: GoogleFonts.robotoFlex(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w700,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                            ).animate().fadeIn(duration: 200.ms).slideX(begin: 0.15, end: 0, curve: Curves.easeOutBack),
+                            ),
                           ],
                         ],
                       ),
@@ -917,101 +756,71 @@ class _PeopleScreenState extends State<PeopleScreen> {
                             ),
                             const SizedBox(width: 8),
                             // Branch selector dropdown chip
-                            M3Pressable(
-                              onTap: () => _openBranchPickerModal(branchCounts, totalCount),
-                              borderRadius: M3Shapes.fullRadius,
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                curve: Curves.easeOutCubic,
-                                alignment: Alignment.center,
-                                padding: const EdgeInsets.symmetric(horizontal: 14),
-                                decoration: BoxDecoration(
-                                  color: _selectedFilter != 'All' &&
-                                          _selectedFilter != 'Active' &&
-                                          _selectedFilter != 'My Branch'
-                                      ? U.primary.withValues(alpha: 0.16)
-                                      : U.surfaceContainerHigh,
-                                  borderRadius: M3Shapes.fullRadius,
-                                  border: Border.all(
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => _openBranchPickerModal(branchCounts, totalCount),
+                                borderRadius: M3Shapes.fullRadius,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  curve: Curves.easeOutCubic,
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                  decoration: BoxDecoration(
                                     color: _selectedFilter != 'All' &&
                                             _selectedFilter != 'Active' &&
                                             _selectedFilter != 'My Branch'
-                                        ? U.primary.withValues(alpha: 0.55)
-                                        : U.outlineVariant.withValues(alpha: 0.35),
-                                    width: _selectedFilter != 'All' &&
-                                            _selectedFilter != 'Active' &&
-                                            _selectedFilter != 'My Branch'
-                                        ? 1.2
-                                        : 0.8,
+                                        ? cs.primaryContainer
+                                        : cs.surfaceContainer,
+                                    borderRadius: M3Shapes.fullRadius,
                                   ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.tune_rounded,
-                                      size: 15,
-                                      color: _selectedFilter != 'All' &&
-                                              _selectedFilter != 'Active' &&
-                                              _selectedFilter != 'My Branch'
-                                          ? U.primary
-                                          : U.sub,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      _selectedBranch == 'All' ||
-                                              _selectedFilter == 'All' ||
-                                              _selectedFilter == 'Active' ||
-                                              _selectedFilter == 'My Branch'
-                                          ? 'Branches'
-                                          : _selectedBranch,
-                                      style: GoogleFonts.robotoFlex(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.tune_rounded,
+                                        size: 14,
                                         color: _selectedFilter != 'All' &&
                                                 _selectedFilter != 'Active' &&
                                                 _selectedFilter != 'My Branch'
-                                            ? U.primary
-                                            : U.sub,
-                                        fontSize: 12.5,
-                                        fontWeight: _selectedFilter != 'All' &&
+                                            ? cs.onPrimaryContainer
+                                            : cs.onSurfaceVariant,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        _selectedBranch == 'All' ||
+                                                _selectedFilter == 'All' ||
+                                                _selectedFilter == 'Active' ||
+                                                _selectedFilter == 'My Branch'
+                                            ? 'Branches'
+                                            : _selectedBranch,
+                                        style: GoogleFonts.inter(
+                                          color: _selectedFilter != 'All' &&
+                                                  _selectedFilter != 'Active' &&
+                                                  _selectedFilter != 'My Branch'
+                                              ? cs.onPrimaryContainer
+                                              : cs.onSurfaceVariant,
+                                          fontSize: 12.5,
+                                          fontWeight: _selectedFilter != 'All' &&
+                                                  _selectedFilter != 'Active' &&
+                                                  _selectedFilter != 'My Branch'
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        size: 16,
+                                        color: _selectedFilter != 'All' &&
                                                 _selectedFilter != 'Active' &&
                                                 _selectedFilter != 'My Branch'
-                                            ? FontWeight.w800
-                                            : FontWeight.w600,
-                                      ),
-                                    ),
-                                    if (_selectedFilter != 'All' &&
-                                        _selectedFilter != 'Active' &&
-                                        _selectedFilter != 'My Branch' &&
-                                        (branchCounts[_selectedBranch] ?? 0) > 0) ...[
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                        decoration: BoxDecoration(
-                                          color: U.primary.withValues(alpha: 0.22),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          '${branchCounts[_selectedBranch]}',
-                                          style: GoogleFonts.robotoFlex(
-                                            color: U.primary,
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
+                                            ? cs.onPrimaryContainer
+                                            : cs.onSurfaceVariant,
                                       ),
                                     ],
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.keyboard_arrow_down_rounded,
-                                      size: 16,
-                                      color: _selectedFilter != 'All' &&
-                                              _selectedFilter != 'Active' &&
-                                              _selectedFilter != 'My Branch'
-                                          ? U.primary
-                                          : U.sub,
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -1046,7 +855,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
                     )
                   else if (_viewMode == PeopleViewMode.grid)
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
                       sliver: SliverGrid(
                         key: ValueKey('grid-$_selectedFilter-${query.isNotEmpty}'),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -1114,7 +923,7 @@ class _PeopleScreenState extends State<PeopleScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(0, 4, 0, 120),
+                      padding: const EdgeInsets.fromLTRB(0, 4, 0, 28),
                       sliver: SliverList(
                         key: ValueKey('list-$_selectedFilter-${query.isNotEmpty}'),
                         delegate: SliverChildBuilderDelegate(
@@ -1188,39 +997,25 @@ class _PeopleScreenState extends State<PeopleScreen> {
           curve: Curves.easeInOut,
           opacity: _showScrollToTop ? 1.0 : 0.0,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 74),
-            child: M3Pressable(
-              onTap: _showScrollToTop ? _scrollToTop : null,
-              borderRadius: BorderRadius.circular(15),
-              scaleFactor: 0.92,
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: U.primary,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: U.primary.withValues(alpha: 0.38),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    width: 0.8,
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _showScrollToTop ? _scrollToTop : null,
+                customBorder: const CircleBorder(),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: cs.primaryContainer,
+                    shape: BoxShape.circle,
                   ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.arrow_upward_rounded,
-                    color: U.getContrastColor(U.primary),
-                    size: 22,
+                  child: Center(
+                    child: Icon(
+                      Icons.arrow_upward_rounded,
+                      color: cs.onPrimaryContainer,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
@@ -1239,84 +1034,65 @@ class _PeopleScreenState extends State<PeopleScreen> {
     bool showLiveDot = false,
     IconData? icon,
   }) {
+    final cs = Theme.of(context).colorScheme;
     final isSelected = _selectedFilter == id;
-    return M3Pressable(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        _searchFocusNode.unfocus();
-        setState(() {
-          _selectedFilter = id;
-          if (id == 'All') _selectedBranch = 'All';
-        });
-      },
-      borderRadius: M3Shapes.fullRadius,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: isSelected ? U.primary : U.surfaceContainerHigh,
-          borderRadius: M3Shapes.fullRadius,
-          border: Border.all(
-            color: isSelected
-                ? U.primary
-                : U.outlineVariant.withValues(alpha: 0.35),
-            width: isSelected ? 1.2 : 0.8,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          _searchFocusNode.unfocus();
+          setState(() {
+            _selectedFilter = id;
+            if (id == 'All') _selectedBranch = 'All';
+          });
+        },
+        borderRadius: M3Shapes.fullRadius,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: isSelected ? cs.primaryContainer : cs.surfaceContainer,
+            borderRadius: M3Shapes.fullRadius,
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (isSelected) ...[
-              Icon(
-                Icons.check_rounded,
-                size: 14,
-                color: U.getContrastColor(U.primary),
-              ).animate().scale(curve: Curves.easeOutBack, duration: 180.ms),
-              const SizedBox(width: 5),
-            ] else if (showLiveDot) ...[
-              _RadarPingDot(),
-              const SizedBox(width: 5),
-            ] else if (icon != null) ...[
-              Icon(
-                icon,
-                size: 14,
-                color: U.sub,
-              ),
-              const SizedBox(width: 5),
-            ],
-            Text(
-              label,
-              style: GoogleFonts.robotoFlex(
-                color: isSelected ? U.getContrastColor(U.primary) : U.text,
-                fontSize: 12.5,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-              ),
-            ),
-            if (count != null && count > 0) ...[
-              const SizedBox(width: 6),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                decoration: BoxDecoration(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (showLiveDot && !isSelected) ...[
+                const _RadarPingDot(),
+                const SizedBox(width: 5),
+              ] else if (icon != null && !isSelected) ...[
+                Icon(icon, size: 14, color: cs.onSurfaceVariant),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                label,
+                style: GoogleFonts.inter(
                   color: isSelected
-                      ? U.getContrastColor(U.primary).withValues(alpha: 0.22)
-                      : U.primary.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(8),
+                      ? cs.onPrimaryContainer
+                      : cs.onSurfaceVariant,
+                  fontSize: 12.5,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
-                child: Text(
+              ),
+              if (count != null && count > 0) ...[
+                const SizedBox(width: 6),
+                Text(
                   '$count',
-                  style: GoogleFonts.robotoFlex(
-                    color: isSelected ? U.getContrastColor(U.primary) : U.primary,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
+                  style: GoogleFonts.inter(
+                    color: isSelected
+                        ? cs.onPrimaryContainer.withValues(alpha: 0.75)
+                        : cs.onSurfaceVariant.withValues(alpha: 0.6),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -1785,35 +1561,17 @@ class _PeerGridCardState extends State<_PeerGridCard> {
     final branch = (widget.user['branch'] ?? '').toString().trim();
     final isSuperuser = widget.user['role'] == 'superuser';
     final isMe = uid == widget.currentUid;
-    final hasActiveVibe = widget.vibe != null;
 
+    final cs = Theme.of(context).colorScheme;
     return M3Pressable(
       onTap: widget.onTap,
-      scaleFactor: 0.94,
-      borderRadius: M3Shapes.cardRadius,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
+      scaleFactor: 0.96,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: hasActiveVibe
-              ? Color.alphaBlend(U.primary.withValues(alpha: 0.06), U.surfaceContainerLow)
-              : U.surfaceContainerLow,
-          borderRadius: M3Shapes.cardRadius,
-          border: Border.all(
-            color: U.outlineVariant.withValues(alpha: 0.35),
-            width: 0.8,
-          ),
-          boxShadow: hasActiveVibe
-              ? [
-                  BoxShadow(
-                    color: U.primary.withValues(alpha: 0.10),
-                    blurRadius: 12,
-                    spreadRadius: -2,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
+          color: cs.surfaceContainer,
+          borderRadius: BorderRadius.circular(20),
         ),
         padding: EdgeInsets.zero,
         child: Column(
@@ -2205,39 +1963,21 @@ class _PeerListTileState extends State<_PeerListTile> {
     final branch = (widget.user['branch'] ?? '').toString().trim();
     final isSuperuser = widget.user['role'] == 'superuser';
     final isMe = uid == widget.currentUid;
-    final hasActiveVibe = widget.vibe != null;
 
+    final cs = Theme.of(context).colorScheme;
     return M3Pressable(
       onTap: widget.onTap,
-      scaleFactor: 0.965,
-      borderRadius: M3Shapes.cardRadius,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      scaleFactor: 0.98,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 10),
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: hasActiveVibe
-              ? Color.alphaBlend(U.primary.withValues(alpha: 0.05), U.surfaceContainerLow)
-              : U.surfaceContainerLow,
-          borderRadius: M3Shapes.cardRadius,
-          border: Border.all(
-            color: U.outlineVariant.withValues(alpha: 0.35),
-            width: 0.8,
-          ),
-          boxShadow: hasActiveVibe
-              ? [
-                  BoxShadow(
-                    color: U.primary.withValues(alpha: 0.08),
-                    blurRadius: 10,
-                    spreadRadius: -2,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
+          color: cs.surfaceContainer,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
               // Squircle Avatar + Status Badge

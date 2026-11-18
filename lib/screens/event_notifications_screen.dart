@@ -287,23 +287,24 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: U.bg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: AppBar(
-        backgroundColor: U.bg,
+        backgroundColor: cs.surfaceContainerLowest,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: U.text, size: 19),
+          icon: Icon(Icons.arrow_back_rounded, color: cs.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Notifications',
-          style: GoogleFonts.newsreader(
-            color: U.text,
-            fontSize: 24,
-            fontWeight: FontWeight.w400,
-            fontStyle: FontStyle.italic,
+          style: GoogleFonts.inter(
+            color: cs.onSurface,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.4,
           ),
         ),
         actions: [
@@ -316,9 +317,9 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                 ),
                 child: Text(
-                  'Clear All',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: U.primary,
+                  'Clear all',
+                  style: GoogleFonts.inter(
+                    color: cs.primary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -328,7 +329,11 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: IconButton(
-              icon: Icon(Icons.tune_rounded, color: U.text, size: 20),
+              icon: Icon(
+                Icons.tune_rounded,
+                color: cs.onSurfaceVariant,
+                size: 21,
+              ),
               tooltip: 'Notification Settings',
               onPressed: () {
                 Navigator.push(
@@ -343,16 +348,17 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: U.primary,
-          unselectedLabelColor: U.dim,
-          indicatorColor: U.primary,
-          indicatorWeight: 2.5,
-          labelStyle: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
+          labelColor: cs.primary,
+          unselectedLabelColor: cs.onSurfaceVariant,
+          indicatorColor: cs.primary,
+          indicatorWeight: 2,
+          dividerColor: cs.outlineVariant.withValues(alpha: 0.25),
+          labelStyle: GoogleFonts.inter(
+            fontSize: 13.5,
             fontWeight: FontWeight.w600,
           ),
-          unselectedLabelStyle: GoogleFonts.plusJakartaSans(
-            fontSize: 13,
+          unselectedLabelStyle: GoogleFonts.inter(
+            fontSize: 13.5,
             fontWeight: FontWeight.w500,
           ),
           tabs: [
@@ -414,21 +420,21 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
 
           // 4. Certificates Awarded
           if (_certificates.isNotEmpty) ...[
-            _buildSectionHeader('Certificates Earned 🎓'),
+            _buildSectionHeader('Certificates'),
             ..._certificates.map((cert) => _buildCertificateCard(cert)),
             const SizedBox(height: 12),
           ],
 
           // 5. Events Ending Soon
           if (_endingSoon.isNotEmpty) ...[
-            _buildSectionHeader('Registrations Ending Soon ⏳'),
+            _buildSectionHeader('Ending Soon'),
             ..._endingSoon.map((event) => _buildEventEndingSoonCard(event)),
             const SizedBox(height: 12),
           ],
 
           // 6. New Events
           if (_newEvents.isNotEmpty) ...[
-            _buildSectionHeader('Upcoming Campus Events 🗓️'),
+            _buildSectionHeader('Upcoming Events'),
             ..._newEvents.map((event) => _buildNewEventCard(event)),
           ],
         ],
@@ -485,17 +491,17 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
         physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         children: [
           if (_certificates.isNotEmpty) ...[
-            _buildSectionHeader('Certificates Earned 🎓'),
+            _buildSectionHeader('Certificates'),
             ..._certificates.map((cert) => _buildCertificateCard(cert)),
             const SizedBox(height: 12),
           ],
           if (_endingSoon.isNotEmpty) ...[
-            _buildSectionHeader('Registrations Ending Soon ⏳'),
+            _buildSectionHeader('Ending Soon'),
             ..._endingSoon.map((event) => _buildEventEndingSoonCard(event)),
             const SizedBox(height: 12),
           ],
           if (_newEvents.isNotEmpty) ...[
-            _buildSectionHeader('Upcoming Events 🗓️'),
+            _buildSectionHeader('Upcoming Events'),
             ..._newEvents.map((event) => _buildNewEventCard(event)),
           ],
         ],
@@ -506,15 +512,16 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
   // ─── CARD BUILDERS ─────────────────────────────────────────────────────────
 
   Widget _buildSectionHeader(String title) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 6),
+      padding: const EdgeInsets.only(left: 4, bottom: 10, top: 8),
       child: Text(
-        title.toUpperCase(),
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: U.dim,
-          letterSpacing: 0.8,
+        title,
+        style: GoogleFonts.inter(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
+          color: cs.onSurfaceVariant.withValues(alpha: 0.85),
         ),
       ),
     );
@@ -531,13 +538,13 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
     final photoUrl = (request['photoUrl'] ?? request['photoURL'])?.toString();
     final branch = (request['branch'] ?? request['department'] ?? '').toString().trim();
 
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: U.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: U.primary.withValues(alpha: 0.22), width: 1),
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -692,13 +699,13 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
     final isReply = wave['isReply'] == true;
     final replied = wave['replied'] == true;
 
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: U.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: U.peach.withValues(alpha: 0.35), width: 1),
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -910,15 +917,15 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
       color = U.gold;
     }
 
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: U.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
+          color: cs.surfaceContainer,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -981,6 +988,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
 
   // Certificate Earned Card
   Widget _buildCertificateCard(EventCertificate cert) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -990,11 +998,10 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: U.gold.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: U.gold.withValues(alpha: 0.35), width: 1),
+          color: cs.surfaceContainer,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1073,6 +1080,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
 
   // Event Registration Ending Soon
   Widget _buildEventEndingSoonCard(EventModel event) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -1082,11 +1090,10 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: U.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: U.peach.withValues(alpha: 0.35), width: 1),
+          color: cs.surfaceContainer,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1141,6 +1148,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
 
   // New Event Card
   Widget _buildNewEventCard(EventModel event) {
+    final cs = Theme.of(context).colorScheme;
     final conductor = event.conductedBy.isNotEmpty ? event.conductedBy : event.organizerName;
     return GestureDetector(
       onTap: () {
@@ -1151,11 +1159,10 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: U.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: U.border, width: 1),
+          color: cs.surfaceContainer,
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1211,6 +1218,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
   }
 
   Widget _buildEmptyState(String title, String subtitle) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -1218,31 +1226,34 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
-                color: U.surface,
+                color: cs.surfaceContainer,
                 shape: BoxShape.circle,
-                border: Border.all(color: U.border),
               ),
-              child: Icon(Icons.notifications_none_rounded, size: 30, color: U.dim),
+              child: Icon(
+                Icons.notifications_none_rounded,
+                size: 28,
+                color: cs.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               title,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: U.text,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 13,
-                color: U.sub,
+                color: cs.onSurfaceVariant,
               ),
             ),
           ],

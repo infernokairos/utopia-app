@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -648,266 +648,43 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   }
 
   Widget _buildTopSyncBar() {
-    final lastTimeLabel = _formatSyncTimeLabel();
+    final cs = Theme.of(context).colorScheme;
+    final String label;
+    final Color color;
 
-    // ── 1. PORTAL IS DOWN / FAILED ──
-    if (_portalDown) {
-      return Container(
-        margin: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: U.red.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: U.red.withValues(alpha: 0.35),
-            width: 1.0,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: U.red.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.cloud_off_rounded, color: U.red, size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'College portal is down',
-                          style: GoogleFonts.outfit(
-                            color: U.red,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: U.red.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'OFFLINE',
-                          style: GoogleFonts.outfit(
-                            color: U.red,
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _portalErrorMessage != null && _portalErrorMessage!.isNotEmpty && !_portalErrorMessage!.contains('Exception')
-                        ? '$_portalErrorMessage • Saved ($lastTimeLabel)'
-                        : 'Saved data ($lastTimeLabel)',
-                    style: GoogleFonts.outfit(
-                      color: U.sub,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            InkWell(
-              onTap: _refresh,
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: U.red.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.refresh_rounded, size: 14, color: U.red),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Retry',
-                      style: GoogleFonts.outfit(
-                        color: U.red,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ).animate().fadeIn(duration: 250.ms).slideY(begin: -0.1, end: 0, duration: 250.ms);
-    }
-
-    // ── 2. SYNCING LIVE IN BACKGROUND ──
     if (_isSyncingLive) {
-      return Container(
-        margin: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: U.primary.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: U.primary.withValues(alpha: 0.28),
-            width: 1.0,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: U.primary.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Center(
-                child: RotationTransition(
-                  turns: _syncMotionController,
-                  child: Icon(
-                    Icons.sync_rounded,
-                    color: U.primary,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Syncing with college portal...',
-                          style: GoogleFonts.outfit(
-                            color: U.primary,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: U.primary.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'LIVE',
-                          style: GoogleFonts.outfit(
-                            color: U.primary,
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-                            begin: const Offset(0.92, 0.92),
-                            end: const Offset(1.08, 1.08),
-                            duration: 700.ms,
-                          ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Updating records...',
-                    style: GoogleFonts.outfit(
-                      color: U.sub,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ).animate().fadeIn(duration: 200.ms);
+      label = 'Syncing';
+      color = cs.primary;
+    } else if (!_portalDown &&
+        !_isFromCache &&
+        _lastSyncTime != null &&
+        DateTime.now().difference(_lastSyncTime!).inMinutes < 2) {
+      label = 'Synced just now';
+      color = cs.onSurfaceVariant;
+    } else {
+      label = 'Sync';
+      color = _portalDown ? cs.error : cs.onSurfaceVariant;
     }
 
-    // ── 3. SYNCED & UP TO DATE (IDLE STATE) ──
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 2, 22, 6),
-      child: Row(
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: U.green,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: U.green.withValues(alpha: 0.4),
-                  blurRadius: 6,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
+      padding: const EdgeInsets.fromLTRB(20, 2, 20, 4),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _isSyncingLive ? null : _refresh,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             child: Text(
-              _isFromCache
-                  ? 'Saved • $lastTimeLabel'
-                  : 'Synced • $lastTimeLabel',
-              style: GoogleFonts.outfit(
-                color: U.sub,
+              label,
+              style: GoogleFonts.inter(
+                color: color,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          InkWell(
-            onTap: _refresh,
-            borderRadius: BorderRadius.circular(6),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.sync_rounded, size: 13, color: U.sub),
-                  const SizedBox(width: 3),
-                  Text(
-                    'Sync',
-                    style: GoogleFonts.outfit(
-                      color: U.sub,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -2440,60 +2217,28 @@ class _AttendanceScreenState extends State<AttendanceScreen>
 
   @override
   Widget build(BuildContext context) {
-    final showLoadedActions = _state == _AttendanceViewState.loaded;
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: U.bg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: AppBar(
-        backgroundColor: U.bg,
+        backgroundColor: cs.surfaceContainerLowest,
         elevation: 0,
+        scrolledUnderElevation: 0,
         titleSpacing: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: U.text, size: 20),
+          icon: Icon(Icons.arrow_back_rounded, color: cs.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Attendance',
-              style: GoogleFonts.outfit(
-                color: U.text,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              _isSyncingLive
-                  ? 'Syncing live data...'
-                  : (_portalDown
-                      ? 'Portal offline • Showing cached'
-                      : (_currentTabIndex == 2
-                          ? 'Insights'
-                          : (_currentTabIndex == 1
-                              ? 'What-If Simulator'
-                              : 'Overview'))),
-              style: GoogleFonts.outfit(
-                color: _portalDown
-                    ? U.red
-                    : (_isSyncingLive ? U.primary : U.sub),
-                fontSize: 12,
-                fontWeight: (_portalDown || _isSyncingLive)
-                    ? FontWeight.w600
-                    : FontWeight.normal,
-              ),
-            ),
-          ],
+        title: Text(
+          'Attendance',
+          style: GoogleFonts.inter(
+            color: cs.onSurface,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.4,
+          ),
         ),
         actions: [
-          if (showLoadedActions)
-            IconButton(
-              onPressed: _isSyncingLive ? null : _refresh,
-              tooltip: _isSyncingLive ? 'Syncing...' : 'Sync Portal Data',
-              icon: Icon(
-                Icons.sync_rounded,
-                color: _isSyncingLive ? U.sub.withValues(alpha: 0.4) : U.text,
-                size: 22,
-              ),
-            ),
           _buildThreeDotsMenu(),
           const SizedBox(width: 6),
         ],
@@ -2756,15 +2501,16 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   }
 
   Widget _buildLoadedState() {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      extendBody: true,
+      backgroundColor: cs.surfaceContainerLowest,
+      extendBody: false,
       body: Column(
         children: [
           _buildTopSyncBar(),
           Expanded(
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 240),
+              duration: const Duration(milliseconds: 220),
               child: () {
                 switch (_currentTabIndex) {
                   case 1:
@@ -2792,82 +2538,104 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   }
 
   Widget _buildBottomNavBar() {
-    final isDark = appThemeNotifier.value.isDark;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(32),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-            child: Container(
-              height: 64,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? U.surface.withValues(alpha: 0.55)
-                    : U.surface.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : Colors.white.withValues(alpha: 0.6),
-                  width: 0.8,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                    spreadRadius: -2,
-                  ),
-                ],
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        border: Border(
+          top: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.45),
+            width: 0.8,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 68,
+          child: Row(
+            children: [
+              _buildNavItem(
+                0,
+                Icons.donut_large_outlined,
+                Icons.donut_large_rounded,
+                'Overview',
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildNavItem(0, Icons.donut_large_rounded, 'Overview'),
-                  _buildNavItem(1, Icons.tune_rounded, 'What-If'),
-                  _buildNavItem(2, Icons.bar_chart_rounded, 'Insights'),
-                ],
+              _buildNavItem(
+                1,
+                Icons.tune_outlined,
+                Icons.tune_rounded,
+                'What-If',
               ),
-            ),
+              _buildNavItem(
+                2,
+                Icons.bar_chart_outlined,
+                Icons.bar_chart_rounded,
+                'Insights',
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    IconData activeIcon,
+    String label,
+  ) {
+    final cs = Theme.of(context).colorScheme;
     final isSelected = _currentTabIndex == index;
-    final color = isSelected ? U.primary : U.sub;
     return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _currentTabIndex = index),
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.outfit(
-                color: color,
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (_currentTabIndex != index) {
+              HapticFeedback.selectionClick();
+              setState(() => _currentTabIndex = index);
+            }
+          },
+          borderRadius: BorderRadius.zero,
+          splashColor: cs.primary.withValues(alpha: 0.08),
+          highlightColor: cs.primary.withValues(alpha: 0.04),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                width: isSelected ? 58 : 36,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isSelected ? cs.primaryContainer : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Icon(
+                    isSelected ? activeIcon : icon,
+                    size: 22,
+                    color: isSelected
+                        ? cs.onPrimaryContainer
+                        : cs.onSurfaceVariant,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: isSelected ? 12 : 0,
-              height: 3,
-              decoration: BoxDecoration(
-                color: U.primary,
-                borderRadius: BorderRadius.circular(999),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  color: isSelected ? cs.onSurface : cs.onSurfaceVariant,
+                  fontSize: 11.5,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -2967,18 +2735,16 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   }
 
   Widget _buildFilterDropdown() {
+    final cs = Theme.of(context).colorScheme;
+    final isFiltered = _selectedSortFilter != AttendanceFilterSort.defaultOrder;
     return Theme(
       data: Theme.of(context).copyWith(
         popupMenuTheme: PopupMenuThemeData(
-          color: U.surfaceContainerHigh,
+          color: cs.surfaceContainerHigh,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: U.outlineVariant.withValues(alpha: 0.4),
-              width: 0.8,
-            ),
+            borderRadius: BorderRadius.circular(18),
           ),
-          elevation: 8,
+          elevation: 4,
         ),
       ),
       child: ClipRRect(
@@ -2993,7 +2759,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
               _selectedSortFilter = sort;
             });
           },
-          offset: const Offset(0, 44),
+          offset: const Offset(0, 42),
           itemBuilder: (context) {
             return AttendanceFilterSort.values.map((sort) {
               final isSelected = sort == _selectedSortFilter;
@@ -3004,16 +2770,17 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                     Icon(
                       _getSortFilterIcon(sort),
                       size: 18,
-                      color: isSelected ? U.primary : U.sub,
+                      color: isSelected ? cs.primary : cs.onSurfaceVariant,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         _getSortFilterLabel(sort),
-                        style: GoogleFonts.robotoFlex(
+                        style: GoogleFonts.inter(
                           fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                          color: isSelected ? U.primary : U.text,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w400,
+                          color: isSelected ? cs.primary : cs.onSurface,
                         ),
                       ),
                     ),
@@ -3021,7 +2788,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                       Icon(
                         Icons.check_rounded,
                         size: 18,
-                        color: U.primary,
+                        color: cs.primary,
                       ),
                   ],
                 ),
@@ -3029,48 +2796,36 @@ class _AttendanceScreenState extends State<AttendanceScreen>
             }).toList();
           },
           child: Container(
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            height: 36,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: _selectedSortFilter != AttendanceFilterSort.defaultOrder
-                  ? U.primary.withValues(alpha: 0.14)
-                  : U.surfaceContainerHigh,
+              color: isFiltered ? cs.primaryContainer : cs.surfaceContainer,
               borderRadius: M3Shapes.fullRadius,
-              border: Border.all(
-                color: _selectedSortFilter != AttendanceFilterSort.defaultOrder
-                  ? U.primary.withValues(alpha: 0.5)
-                  : U.outlineVariant.withValues(alpha: 0.4),
-                width: 0.8,
-              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   _getSortFilterIcon(_selectedSortFilter),
-                  size: 16,
-                  color: _selectedSortFilter != AttendanceFilterSort.defaultOrder
-                      ? U.primary
-                      : U.text,
+                  size: 15,
+                  color:
+                      isFiltered ? cs.onPrimaryContainer : cs.onSurfaceVariant,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   _getSortFilterShortLabel(_selectedSortFilter),
-                  style: GoogleFonts.robotoFlex(
+                  style: GoogleFonts.inter(
                     fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: _selectedSortFilter != AttendanceFilterSort.defaultOrder
-                        ? U.primary
-                        : U.text,
+                    fontWeight: FontWeight.w600,
+                    color: isFiltered ? cs.onPrimaryContainer : cs.onSurface,
                   ),
                 ),
                 const SizedBox(width: 4),
                 Icon(
                   Icons.keyboard_arrow_down_rounded,
-                  size: 18,
-                  color: _selectedSortFilter != AttendanceFilterSort.defaultOrder
-                      ? U.primary
-                      : U.sub,
+                  size: 16,
+                  color:
+                      isFiltered ? cs.onPrimaryContainer : cs.onSurfaceVariant,
                 ),
               ],
             ),
@@ -3141,22 +2896,22 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                               children: [
                                 Text(
                                   'Subjects',
-                                  style: GoogleFonts.robotoFlex(
+                                  style: GoogleFonts.inter(
                                     color: U.text,
                                     fontSize: 20,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.3,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: -0.5,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   _selectedSortFilter == AttendanceFilterSort.criticalOnly
-                                      ? '${processedSubjects.length} of ${subjects.length} subjects in danger'
-                                      : '${processedSubjects.length} subjects enrolled',
-                                  style: GoogleFonts.robotoFlex(
+                                      ? '${processedSubjects.length} of ${subjects.length} below target'
+                                      : '${processedSubjects.length} subjects',
+                                  style: GoogleFonts.inter(
                                     color: U.sub,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w400,
                                   ),
                                 ),
                               ],
@@ -3222,7 +2977,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 84),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => Padding(
@@ -3235,40 +2990,13 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                     ),
                   ),
                 ),
-              // ── Academic Insights Section (AUS & ACET Portal) ──
-              if (_selectedCollege == 'aus' || _selectedCollege == 'acet' || _selectedCollege == 'aec')
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
-                    child: _buildAcademicInsightsSection(data),
-                  ),
-                ),
-              // Footnote for server type at the end of the scrollview instead of floating overlay
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 100),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.info_outline_rounded, size: 14, color: U.sub),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Fetched via ${data['serverUsed'] ?? 'In-App'}',
-                          style: GoogleFonts.outfit(color: U.sub, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
-        // Today floating button positioned snuggly above the bottom navigation bar
+        // Today button
         Positioned(
-          right: 24,
-          bottom: 20,
+          right: 20,
+          bottom: 16,
           child: _TodayPulseButton(
             animation: _glowController,
             onTap: _showTodaySheet,
@@ -4343,7 +4071,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     final statusLabel = _headlineFor(overall);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       children: [
         // ── 0. Today's Attendance (Directly at top for ACET) ──
         if (_selectedCollege == 'acet' || _selectedCollege == 'aec') ...[
@@ -4400,17 +4128,13 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     required String statusLabel,
   }) {
     final missedClasses = (totalClasses - totalAttended).clamp(0, 9999);
-    final isDark = appThemeNotifier.value.isDark;
+    final cs = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark ? U.surfaceContainerHigh : U.surfaceContainer,
+        color: cs.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: color.withValues(alpha: 0.25),
-          width: 0.8,
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -5653,14 +5377,11 @@ class _AttendanceScreenState extends State<AttendanceScreen>
         ? 'Needs attention'
         : 'Attend $classesNeeded more class${classesNeeded == 1 ? '' : 'es'} to reach $_targetPercentage%';
 
+    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: U.surfaceContainer,
-        borderRadius: M3Shapes.cardRadius,
-        border: Border.all(
-          color: U.outlineVariant.withValues(alpha: 0.35),
-          width: 0.8,
-        ),
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -5670,13 +5391,13 @@ class _AttendanceScreenState extends State<AttendanceScreen>
             Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(_subjectIcon(name), color: color, size: 22),
+                  child: Icon(_subjectIcon(name), color: color, size: 20),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -5685,78 +5406,60 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                     children: [
                       Text(
                         name,
-                        style: GoogleFonts.robotoFlex(
-                          color: U.text,
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w700,
+                        style: GoogleFonts.inter(
+                          color: cs.onSurface,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 2),
                       Text(
-                        '$attendedClasses / $totalClasses classes attended',
-                        style: GoogleFonts.robotoFlex(color: U.sub, fontSize: 12),
+                        '$attendedClasses / $totalClasses classes',
+                        style: GoogleFonts.inter(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: M3Shapes.fullRadius,
-                  ),
-                  child: Text(
-                    '${percentage.toStringAsFixed(1)}%',
-                    style: GoogleFonts.robotoFlex(
-                      color: color,
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w800,
-                    ),
+                const SizedBox(width: 8),
+                Text(
+                  '${percentage.toStringAsFixed(1)}%',
+                  style: GoogleFonts.inter(
+                    color: color,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: U.surfaceContainerLowest,
-                borderRadius: M3Shapes.fullRadius,
-              ),
-              child: ClipRRect(
-                borderRadius: M3Shapes.fullRadius,
-                child: LinearProgressIndicator(
-                  minHeight: 6,
-                  backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
-                  value: totalClasses == 0
-                      ? 0
-                      : (percentage / 100).clamp(0.0, 1.0),
-                ),
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                minHeight: 5,
+                backgroundColor: cs.surfaceContainerHighest,
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                value: totalClasses == 0
+                    ? 0
+                    : (percentage / 100).clamp(0.0, 1.0),
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(
-                  percentage >= _targetPercentage ? Icons.check_circle_outline_rounded : Icons.info_outline_rounded,
-                  size: 14,
-                  color: percentage >= _targetPercentage ? U.sub : color,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    bufferLine,
-                    style: GoogleFonts.robotoFlex(
-                      color: percentage >= _targetPercentage ? U.sub : color,
-                      fontSize: 12,
-                      fontWeight: percentage >= _targetPercentage
-                          ? FontWeight.w500
-                          : FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 10),
+            Text(
+              bufferLine,
+              style: GoogleFonts.inter(
+                color: percentage >= _targetPercentage
+                    ? cs.onSurfaceVariant
+                    : color,
+                fontSize: 12,
+                fontWeight: percentage >= _targetPercentage
+                    ? FontWeight.w400
+                    : FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -5842,96 +5545,64 @@ class _GradientHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = accent ?? U.primary;
+    final cs = Theme.of(context).colorScheme;
+    final accentColor = accent ?? cs.primary;
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: [U.card, accentColor.withValues(alpha: 0.18)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(
-          color: U.border.withValues(alpha: 0.8),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: appThemeNotifier.value.isDark ? 0.2 : 0.03),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-            spreadRadius: -2,
-          ),
-        ],
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(18),
+              Text(
+                eyebrow,
+                style: GoogleFonts.inter(
+                  color: accentColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
-                child: Icon(icon, color: accentColor, size: 24),
               ),
               const Spacer(),
+              Icon(icon, color: accentColor, size: 20),
             ],
           ),
-          const SizedBox(height: 18),
-          Text(
-            eyebrow,
-            style: GoogleFonts.outfit(
-              color: accentColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             title,
-            style: GoogleFonts.outfit(
-              color: U.text,
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              height: 1,
+            style: GoogleFonts.inter(
+              color: accentColor,
+              fontSize: 42,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -1.4,
+              height: 1.0,
             ),
           ),
           const SizedBox(height: 10),
           Text(
             subtitle,
-            style: GoogleFonts.outfit(
-              color: subtitleColor ?? U.sub,
-              fontSize: 14,
-              height: 1.45,
-              fontWeight: subtitleColor == null
-                  ? FontWeight.w500
-                  : FontWeight.w700,
+            style: GoogleFonts.inter(
+              color: subtitleColor ?? cs.onSurfaceVariant,
+              fontSize: 13.5,
+              height: 1.4,
+              fontWeight:
+                  subtitleColor == null ? FontWeight.w400 : FontWeight.w600,
             ),
           ),
           if (detail != null && detail!.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(Icons.person_outline_rounded, color: U.sub, size: 16),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    detail!,
-                    style: GoogleFonts.outfit(
-                      color: U.text,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+            const SizedBox(height: 8),
+            Text(
+              detail!,
+              style: GoogleFonts.inter(
+                color: cs.onSurfaceVariant.withValues(alpha: 0.75),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],
@@ -6015,59 +5686,33 @@ class _TodayPulseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = appThemeNotifier.value.isDark;
-    
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(100),
-        child: Container(
-          decoration: BoxDecoration(
-            color: U.card,
-            borderRadius: BorderRadius.circular(100),
-            border: Border.all(
-              color: U.border,
-              width: 0.8,
-            ),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(100),
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.today_rounded,
-                      color: U.primary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Today',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: U.text,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.primaryContainer,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.today_rounded,
+                color: cs.onPrimaryContainer,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Today',
+                style: GoogleFonts.inter(
+                  color: cs.onPrimaryContainer,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),

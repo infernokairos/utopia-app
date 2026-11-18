@@ -274,250 +274,180 @@ class M3ThemeFactory {
     );
   }
 
-  /// Builds a complete Material 3 Expressive ThemeData
+  /// Builds a complete Material 3 ThemeData matching the exact Interceptor style.
   static ThemeData createThemeData({
     required ColorScheme colorScheme,
     required Color text,
     required Color sub,
     required Color border,
   }) {
-    final textTheme = M3Typography.createTextTheme(
-      textColor: text,
-      subColor: sub,
+    final cs = colorScheme;
+    final textTheme = GoogleFonts.interTextTheme(
+      TextTheme(
+        displayLarge: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w700),
+        displayMedium: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600),
+        displaySmall: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600),
+        headlineLarge: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600),
+        headlineMedium: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w500),
+        headlineSmall: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w500),
+        titleLarge: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600),
+        titleMedium: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w500),
+        titleSmall: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.w500),
+        bodyLarge: TextStyle(color: cs.onSurface, height: 1.6),
+        bodyMedium: TextStyle(color: cs.onSurface, height: 1.5),
+        bodySmall: TextStyle(color: cs.onSurfaceVariant, height: 1.4),
+        labelLarge: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w500),
+        labelMedium: TextStyle(color: cs.onSurfaceVariant),
+        labelSmall: TextStyle(color: cs.onSurfaceVariant),
+      ),
     );
 
     return ThemeData(
       useMaterial3: true,
-      brightness: colorScheme.brightness,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.surface,
+      brightness: cs.brightness,
+      colorScheme: cs,
+      scaffoldBackgroundColor: cs.surfaceContainerLowest,
       textTheme: textTheme,
-
-      // M3 Card Theme with Large 16dp radius and surfaceContainer elevation
-      cardTheme: CardThemeData(
-        color: colorScheme.surfaceContainerLow,
-        elevation: 0,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: M3Shapes.largeRadius,
-          side: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-            width: 0.8,
-          ),
-        ),
-      ),
-
-      // M3 Buttons with Expressive pill / rounded shapes
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
-          shape: RoundedRectangleBorder(borderRadius: M3Shapes.fullRadius),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          textStyle: GoogleFonts.robotoFlex(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.1,
-          ),
-        ),
-      ),
-
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          elevation: 0,
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
-          shape: RoundedRectangleBorder(borderRadius: M3Shapes.fullRadius),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          textStyle: GoogleFonts.robotoFlex(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.1,
-          ),
-        ),
-      ),
-
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          elevation: 0,
-          foregroundColor: colorScheme.onSurface,
-          side: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.5),
-            width: 1.0,
-          ),
-          shape: RoundedRectangleBorder(borderRadius: M3Shapes.fullRadius),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          textStyle: GoogleFonts.robotoFlex(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.1,
-          ),
-        ),
-      ),
-
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: colorScheme.primary,
-          shape: RoundedRectangleBorder(borderRadius: M3Shapes.smallRadius),
-          textStyle: GoogleFonts.robotoFlex(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-
-      // M3 Input Decoration
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        border: OutlineInputBorder(
-          borderRadius: M3Shapes.largeRadius,
-          borderSide: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-            width: 0.8,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: M3Shapes.largeRadius,
-          borderSide: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-            width: 0.8,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: M3Shapes.largeRadius,
-          borderSide: BorderSide(
-            color: colorScheme.primary,
-            width: 1.5,
-          ),
-        ),
-        hintStyle: GoogleFonts.robotoFlex(
-          color: sub,
-          fontSize: 13,
-          fontWeight: FontWeight.w400,
-        ),
-      ),
-
-      // M3 Bottom Sheet Theme with Extra Large 28dp radius
-      bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: colorScheme.surfaceContainerLow,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(M3Shapes.extraLarge)),
-        ),
-        showDragHandle: false,
-      ),
-
-      // M3 Dialog Theme with Extra Large 28dp radius
-      dialogTheme: DialogThemeData(
-        backgroundColor: colorScheme.surfaceContainerHigh,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: M3Shapes.extraLargeRadius,
-          side: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-            width: 0.8,
-          ),
-        ),
-      ),
-
-      // M3 Chip Theme
-      chipTheme: ChipThemeData(
-        backgroundColor: colorScheme.surfaceContainerHigh,
-        labelStyle: GoogleFonts.robotoFlex(
-          color: colorScheme.onSurface,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: M3Shapes.smallRadius,
-          side: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-            width: 0.8,
-          ),
-        ),
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      ),
-
-      // M3 App Bar Theme
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.robotoFlex(
-          color: colorScheme.onSurface,
+        titleTextStyle: GoogleFonts.inter(
+          color: cs.onSurface,
           fontSize: 20,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.3,
+          fontWeight: FontWeight.w600,
         ),
-        iconTheme: IconThemeData(color: colorScheme.onSurface),
+        iconTheme: IconThemeData(color: cs.onSurface),
       ),
-
+      cardTheme: CardThemeData(
+        color: cs.surfaceContainer,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: cs.primary,
+          side: BorderSide(color: cs.outline),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: cs.primary,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: cs.surfaceContainerHigh,
+        hintStyle: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: cs.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: cs.primary, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: cs.surfaceContainer,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        showDragHandle: false,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: cs.surfaceContainerHigh,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: cs.surfaceContainerLow,
+        selectedItemColor: cs.primary,
+        unselectedItemColor: cs.onSurfaceVariant,
+        elevation: 0,
+      ),
       dividerTheme: DividerThemeData(
-        color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-        thickness: 0.8,
-        space: 1,
+        color: cs.outlineVariant,
+        thickness: 0.5,
       ),
-
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: colorScheme.primaryContainer,
-        foregroundColor: colorScheme.onPrimaryContainer,
+        backgroundColor: cs.primaryContainer,
+        foregroundColor: cs.onPrimaryContainer,
         elevation: 0,
         focusElevation: 0,
         hoverElevation: 0,
         disabledElevation: 0,
         highlightElevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: M3Shapes.largeRadius),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: colorScheme.surfaceContainer,
-        indicatorColor: colorScheme.secondaryContainer,
-        elevation: 0,
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          return GoogleFonts.robotoFlex(
-            fontSize: 12,
-            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
-            color: states.contains(WidgetState.selected) ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
-          );
-        }),
+      chipTheme: ChipThemeData(
+        backgroundColor: cs.surfaceContainerLow,
+        selectedColor: cs.primaryContainer,
+        labelStyle: TextStyle(color: cs.onSurface, fontSize: 13),
+        side: BorderSide(color: cs.outlineVariant),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
-
-      navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: colorScheme.surface,
-        indicatorColor: colorScheme.secondaryContainer,
-        elevation: 0,
-        labelType: NavigationRailLabelType.all,
-        unselectedLabelTextStyle: GoogleFonts.robotoFlex(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        selectedLabelTextStyle: GoogleFonts.robotoFlex(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: colorScheme.onSurface,
-        ),
-      ),
-
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: colorScheme.inverseSurface,
-        contentTextStyle: GoogleFonts.robotoFlex(
-          color: colorScheme.onInverseSurface,
+        backgroundColor: cs.inverseSurface,
+        contentTextStyle: GoogleFonts.inter(
+          color: cs.onInverseSurface,
           fontSize: 14,
           fontWeight: FontWeight.w400,
         ),
-        shape: RoundedRectangleBorder(borderRadius: M3Shapes.extraSmallRadius),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
       ),
-
-      iconTheme: IconThemeData(color: sub),
+      iconTheme: IconThemeData(color: cs.onSurfaceVariant),
     );
   }
 }

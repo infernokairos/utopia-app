@@ -17,7 +17,6 @@ import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:rive/rive.dart' hide Image, LinearGradient, RadialGradient;
 import 'firebase_options.dart';
 
 import 'services/cache_service.dart';
@@ -53,318 +52,533 @@ class AppInitializationState {
 class AppTheme {
   const AppTheme({
     required this.key,
+    required this.accentId,
     required this.label,
     required this.description,
-    required this.isDark,
-    required this.bg,
-    required this.surface,
-    required this.card,
-    required this.border,
-    required this.text,
-    required this.sub,
-    required this.dim,
-    required this.primary,
-    required this.teal,
-    required this.red,
-    required this.green,
-    required this.peach,
-    required this.blue,
-    required this.gold,
-    required this.sky,
-    required this.lavender,
-    required this.gray,
-    required this.mdH1,
-    required this.mdH2,
-    required this.mdH3,
-    required this.mdBold,
-    required this.mdItalic,
-    required this.mdCode,
-    required this.mdLink,
-    required this.mdBlockquote,
-    required this.mdDel,
+    required this.colorScheme,
     required this.mermaidPrimary,
     required this.mermaidBackground,
     required this.mermaidLine,
   });
 
   final String key;
+  final String accentId;
   final String label;
   final String description;
-  final bool isDark;
-  final Color bg;
-  final Color surface;
-  final Color card;
-  final Color border;
-  final Color text;
-  final Color sub;
-  final Color dim;
-  final Color primary;
-  final Color teal;
-  final Color red;
-  final Color green;
-  final Color peach;
-  final Color blue;
-  final Color gold;
-  final Color sky;
-  final Color lavender;
-  final Color gray;
-  final Color mdH1;
-  final Color mdH2;
-  final Color mdH3;
-  final Color mdBold;
-  final Color mdItalic;
-  final Color mdCode;
-  final Color mdLink;
-  final Color mdBlockquote;
-  final Color mdDel;
+  final ColorScheme colorScheme;
   final String mermaidPrimary;
   final String mermaidBackground;
   final String mermaidLine;
 
-  ColorScheme get colorScheme {
-    return M3ThemeFactory.createColorScheme(
-      seedColor: primary,
-      isDark: isDark,
-      surfaceBackground: bg,
-      customSurface: surface,
-      customCard: card,
-      customPrimary: primary,
-      customSecondary: teal,
-      customText: text,
-      customSub: sub,
-    );
-  }
+  bool get isDark => colorScheme.brightness == Brightness.dark;
+  Color get bg => colorScheme.surfaceContainerLowest;
+  Color get surface => colorScheme.surfaceContainerLow;
+  Color get card => colorScheme.surfaceContainer;
+  Color get border => colorScheme.outlineVariant;
+  Color get text => colorScheme.onSurface;
+  Color get sub => colorScheme.onSurfaceVariant;
+  Color get dim => colorScheme.outline;
+  Color get primary => colorScheme.primary;
+  Color get teal => colorScheme.tertiary;
+  Color get red => colorScheme.error;
+  Color get green => isDark ? const Color(0xFF66DBA4) : const Color(0xFF006C45);
+  Color get peach => colorScheme.tertiary;
+  Color get blue => isDark ? const Color(0xFF82CFFF) : const Color(0xFF006594);
+  Color get gold => isDark ? const Color(0xFFE7C349) : const Color(0xFF715C00);
+  Color get sky => isDark ? const Color(0xFFA4CDDE) : const Color(0xFF3C6473);
+  Color get lavender => colorScheme.primary;
+  Color get gray => colorScheme.onSurfaceVariant;
+
+  Color get mdH1 => colorScheme.onSurface;
+  Color get mdH2 => colorScheme.onSurface;
+  Color get mdH3 => colorScheme.onSurfaceVariant;
+  Color get mdBold => colorScheme.primary;
+  Color get mdItalic => colorScheme.tertiary;
+  Color get mdCode => colorScheme.primary;
+  Color get mdLink => colorScheme.primary;
+  Color get mdBlockquote => colorScheme.onSurfaceVariant;
+  Color get mdDel => colorScheme.outline;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Exact Interceptor Material 3 Token Themes (5 accents × Dark & Light)
+// ─────────────────────────────────────────────────────────────────────────────
 
-
-const _graphiteTheme = AppTheme(
-  key: 'graphite-dark',
-  label: 'Graphite Slate',
-  description: 'Cool graphite tones',
-  isDark: true,
-  bg: Color(0xFF16181A),
-  surface: Color(0xFF1C1F22),
-  card: Color(0xFF222529),
-  border: Color(0xFF2D3136),
-  text: Color(0xFFE6E8EB),
-  sub: Color(0xFF9CA3AF),
-  dim: Color(0xFF6B7280),
-  primary: Color(0xFFFFFFFF),
-  teal: Color(0xFFD1D5DB),
-  red: Color(0xFFE5E7EB),
-  green: Color(0xFFE5E7EB),
-  peach: Color(0xFFD1D5DB),
-  blue: Color(0xFFE5E7EB),
-  gold: Color(0xFFF3F4F6),
-  sky: Color(0xFFD1D5DB),
-  lavender: Color(0xFFE5E7EB),
-  gray: Color(0xFF9CA3AF),
-  mdH1: Color(0xFFFFFFFF),
-  mdH2: Color(0xFFE6E8EB),
-  mdH3: Color(0xFFD1D5DB),
-  mdBold: Color(0xFFFFFFFF),
-  mdItalic: Color(0xFFD1D5DB),
-  mdCode: Color(0xFFE5E7EB),
-  mdLink: Color(0xFFFFFFFF),
-  mdBlockquote: Color(0xFF9CA3AF),
-  mdDel: Color(0xFF6B7280),
-  mermaidPrimary: '#FFFFFF',
-  mermaidBackground: '#222529',
-  mermaidLine: '#E6E8EB',
+const _interceptorDefaultDark = AppTheme(
+  key: 'interceptor-default-dark',
+  accentId: 'default',
+  label: 'Default',
+  description: 'Canonical Material 3 dark',
+  mermaidPrimary: '#D0BCFF',
+  mermaidBackground: '#211F26',
+  mermaidLine: '#E6E1E5',
+  colorScheme: ColorScheme(
+    brightness: Brightness.dark,
+    primary: Color(0xFFD0BCFF),
+    onPrimary: Color(0xFF381E72),
+    primaryContainer: Color(0xFF4F378B),
+    onPrimaryContainer: Color(0xFFEADDFF),
+    secondary: Color(0xFFCCC2DC),
+    onSecondary: Color(0xFF332D41),
+    secondaryContainer: Color(0xFF4A4458),
+    onSecondaryContainer: Color(0xFFE8DEF8),
+    tertiary: Color(0xFFEFB8C8),
+    onTertiary: Color(0xFF492532),
+    tertiaryContainer: Color(0xFF633B48),
+    onTertiaryContainer: Color(0xFFFFD8E4),
+    error: Color(0xFFF2B8B5),
+    onError: Color(0xFF601410),
+    errorContainer: Color(0xFF8C1D18),
+    onErrorContainer: Color(0xFFF9DEDC),
+    surface: Color(0xFF141218),
+    onSurface: Color(0xFFE6E1E5),
+    onSurfaceVariant: Color(0xFFCAC4D0),
+    surfaceDim: Color(0xFF141218),
+    surfaceBright: Color(0xFF3B383E),
+    surfaceContainerLowest: Color(0xFF0F0D13),
+    surfaceContainerLow: Color(0xFF1D1B20),
+    surfaceContainer: Color(0xFF211F26),
+    surfaceContainerHigh: Color(0xFF2B2930),
+    surfaceContainerHighest: Color(0xFF36343B),
+    outline: Color(0xFF938F99),
+    outlineVariant: Color(0xFF49454F),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: Color(0xFFE6E1E5),
+    onInverseSurface: Color(0xFF313033),
+    inversePrimary: Color(0xFF6750A4),
+  ),
 );
 
-const _slateMonochromeTheme = AppTheme(
-  key: 'slate-monochrome',
-  label: 'Pure Midnight',
-  description: 'Ultra deep midnight grayscale',
-  isDark: true,
-  bg: Color(0xFF050505),
-  surface: Color(0xFF0D0D0E),
-  card: Color(0xFF141416),
-  border: Color(0xFF262629),
-  text: Color(0xFFFAFAFA),
-  sub: Color(0xFFA1A1AA),
-  dim: Color(0xFF71717A),
-  primary: Color(0xFFFFFFFF),
-  teal: Color(0xFFE4E4E7),
-  red: Color(0xFFE4E4E7),
-  green: Color(0xFFE4E4E7),
-  peach: Color(0xFFD4D4D8),
-  blue: Color(0xFFE4E4E7),
-  gold: Color(0xFFFAFAFA),
-  sky: Color(0xFFD4D4D8),
-  lavender: Color(0xFFE4E4E7),
-  gray: Color(0xFFA1A1AA),
-  mdH1: Color(0xFFFFFFFF),
-  mdH2: Color(0xFFFAFAFA),
-  mdH3: Color(0xFFE4E4E7),
-  mdBold: Color(0xFFFFFFFF),
-  mdItalic: Color(0xFFD4D4D8),
-  mdCode: Color(0xFFE4E4E7),
-  mdLink: Color(0xFFFFFFFF),
-  mdBlockquote: Color(0xFFA1A1AA),
-  mdDel: Color(0xFF71717A),
-  mermaidPrimary: '#FFFFFF',
-  mermaidBackground: '#141416',
-  mermaidLine: '#FAFAFA',
+const _interceptorDefaultLight = AppTheme(
+  key: 'interceptor-default-light',
+  accentId: 'default',
+  label: 'Default',
+  description: 'Canonical Material 3 light',
+  mermaidPrimary: '#6750A4',
+  mermaidBackground: '#F3EDF7',
+  mermaidLine: '#1D1B20',
+  colorScheme: ColorScheme(
+    brightness: Brightness.light,
+    primary: Color(0xFF6750A4),
+    onPrimary: Color(0xFFFFFFFF),
+    primaryContainer: Color(0xFFEADDFF),
+    onPrimaryContainer: Color(0xFF21005D),
+    secondary: Color(0xFF625B71),
+    onSecondary: Color(0xFFFFFFFF),
+    secondaryContainer: Color(0xFFE8DEF8),
+    onSecondaryContainer: Color(0xFF1D192B),
+    tertiary: Color(0xFF7D5260),
+    onTertiary: Color(0xFFFFFFFF),
+    tertiaryContainer: Color(0xFFFFD8E4),
+    onTertiaryContainer: Color(0xFF31111D),
+    error: Color(0xFFB3261E),
+    onError: Color(0xFFFFFFFF),
+    errorContainer: Color(0xFFF9DEDC),
+    onErrorContainer: Color(0xFF410E0B),
+    surface: Color(0xFFFEF7FF),
+    onSurface: Color(0xFF1D1B20),
+    onSurfaceVariant: Color(0xFF49454F),
+    surfaceDim: Color(0xFFDED8E1),
+    surfaceBright: Color(0xFFFEF7FF),
+    surfaceContainerLowest: Color(0xFFFFFFFF),
+    surfaceContainerLow: Color(0xFFF7F2FA),
+    surfaceContainer: Color(0xFFF3EDF7),
+    surfaceContainerHigh: Color(0xFFECE6F0),
+    surfaceContainerHighest: Color(0xFFE6E0E9),
+    outline: Color(0xFF79747E),
+    outlineVariant: Color(0xFFCAC4D0),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: Color(0xFF313033),
+    onInverseSurface: Color(0xFFF4EFF4),
+    inversePrimary: Color(0xFFD0BCFF),
+  ),
 );
 
-const _roseGoldTheme = AppTheme(
-  key: 'rose-gold-light',
-  label: 'Rose Gold',
-  description: 'Clean ivory canvas with elegant rose-gold highlights',
-  isDark: false,
-  bg: Color(0xFFFAF8F7),
-  surface: Color(0xFFF4F0EE),
-  card: Color(0xFFFFFFFF),
-  border: Color(0xFFE6DDD8),
-  text: Color(0xFF1F191B),
-  sub: Color(0xFF685E62),
-  dim: Color(0xFF9E9296),
-  primary: Color(0xFFC2727E),
-  teal: Color(0xFF688A80),
-  red: Color(0xFFC24B51),
-  green: Color(0xFF3C885B),
-  peach: Color(0xFFD47A62),
-  blue: Color(0xFF4C7B9B),
-  gold: Color(0xFFC2833A),
-  sky: Color(0xFF5B99B2),
-  lavender: Color(0xFF886A9A),
-  gray: Color(0xFF685E62),
-  mdH1: Color(0xFF1F191B),
-  mdH2: Color(0xFF332A2D),
-  mdH3: Color(0xFF483B3F),
-  mdBold: Color(0xFF1F191B),
-  mdItalic: Color(0xFF57464B),
-  mdCode: Color(0xFFC2727E),
-  mdLink: Color(0xFFB55D6A),
-  mdBlockquote: Color(0xFF685E62),
-  mdDel: Color(0xFF9E9296),
-  mermaidPrimary: '#C2727E',
-  mermaidBackground: '#FFFFFF',
-  mermaidLine: '#1F191B',
+const _interceptorEmeraldDark = AppTheme(
+  key: 'interceptor-emerald-dark',
+  accentId: 'emerald',
+  label: 'Emerald Forest',
+  description: 'Organic botanical dark',
+  mermaidPrimary: '#66DBA4',
+  mermaidBackground: '#162A1F',
+  mermaidLine: '#E0EBE3',
+  colorScheme: ColorScheme(
+    brightness: Brightness.dark,
+    primary: Color(0xFF66DBA4),
+    onPrimary: Color(0xFF003822),
+    primaryContainer: Color(0xFF005234),
+    onPrimaryContainer: Color(0xFF84F8BF),
+    secondary: Color(0xFFB3CCBB),
+    onSecondary: Color(0xFF1F3529),
+    secondaryContainer: Color(0xFF354C3E),
+    onSecondaryContainer: Color(0xFFCFE8D7),
+    tertiary: Color(0xFFA4CDDE),
+    onTertiary: Color(0xFF063543),
+    tertiaryContainer: Color(0xFF234C5A),
+    onTertiaryContainer: Color(0xFFC0E9FA),
+    error: Color(0xFFFFB4AB),
+    onError: Color(0xFF690005),
+    errorContainer: Color(0xFF93000A),
+    onErrorContainer: Color(0xFFFFDAD6),
+    surface: Color(0xFF09160F),
+    onSurface: Color(0xFFE0EBE3),
+    onSurfaceVariant: Color(0xFFBFC9C1),
+    surfaceDim: Color(0xFF09160F),
+    surfaceBright: Color(0xFF334338),
+    surfaceContainerLowest: Color(0xFF050E09),
+    surfaceContainerLow: Color(0xFF102017),
+    surfaceContainer: Color(0xFF162A1F),
+    surfaceContainerHigh: Color(0xFF1E3527),
+    surfaceContainerHighest: Color(0xFF284132),
+    outline: Color(0xFF8A938C),
+    outlineVariant: Color(0xFF404943),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: Color(0xFFE0EBE3),
+    onInverseSurface: Color(0xFF2B332D),
+    inversePrimary: Color(0xFF006C45),
+  ),
 );
 
-const _purpleBabyTheme = AppTheme(
-  key: 'purple-baby-light',
-  label: 'Baby Lav',
-  description: 'Restorative lavender pastel palette with soothing digital violet accents',
-  isDark: false,
-  bg: Color(0xFFF7F5FC),
-  surface: Color(0xFFEFEBF7),
-  card: Color(0xFFFFFFFF),
-  border: Color(0xFFE2D9F3),
-  text: Color(0xFF1B1626),
-  sub: Color(0xFF625975),
-  dim: Color(0xFF988FA9),
-  primary: Color(0xFF8353E2),
-  teal: Color(0xFF4C8D8A),
-  red: Color(0xFFD9536F),
-  green: Color(0xFF3BA97A),
-  peach: Color(0xFFE07A93),
-  blue: Color(0xFF537BE2),
-  gold: Color(0xFFD49B35),
-  sky: Color(0xFF4FAADB),
-  lavender: Color(0xFF8353E2),
-  gray: Color(0xFF625975),
-  mdH1: Color(0xFF1B1626),
-  mdH2: Color(0xFF282138),
-  mdH3: Color(0xFF362C4A),
-  mdBold: Color(0xFF1B1626),
-  mdItalic: Color(0xFF4E4266),
-  mdCode: Color(0xFF8353E2),
-  mdLink: Color(0xFF7C3AED),
-  mdBlockquote: Color(0xFF625975),
-  mdDel: Color(0xFF988FA9),
-  mermaidPrimary: '#8353E2',
-  mermaidBackground: '#FFFFFF',
-  mermaidLine: '#1B1626',
+const _interceptorEmeraldLight = AppTheme(
+  key: 'interceptor-emerald-light',
+  accentId: 'emerald',
+  label: 'Emerald Forest',
+  description: 'Organic botanical light',
+  mermaidPrimary: '#006C45',
+  mermaidBackground: '#E4EFE7',
+  mermaidLine: '#161D18',
+  colorScheme: ColorScheme(
+    brightness: Brightness.light,
+    primary: Color(0xFF006C45),
+    onPrimary: Color(0xFFFFFFFF),
+    primaryContainer: Color(0xFF84F8BF),
+    onPrimaryContainer: Color(0xFF002113),
+    secondary: Color(0xFF4C6354),
+    onSecondary: Color(0xFFFFFFFF),
+    secondaryContainer: Color(0xFFCFE8D7),
+    onSecondaryContainer: Color(0xFF092014),
+    tertiary: Color(0xFF3C6473),
+    onTertiary: Color(0xFFFFFFFF),
+    tertiaryContainer: Color(0xFFC0E9FA),
+    onTertiaryContainer: Color(0xFF001F29),
+    error: Color(0xFFBA1A1A),
+    onError: Color(0xFFFFFFFF),
+    errorContainer: Color(0xFFFFDAD6),
+    onErrorContainer: Color(0xFF410002),
+    surface: Color(0xFFF4FAF5),
+    onSurface: Color(0xFF161D18),
+    onSurfaceVariant: Color(0xFF404943),
+    surfaceDim: Color(0xFFD5E1D9),
+    surfaceBright: Color(0xFFF4FAF5),
+    surfaceContainerLowest: Color(0xFFFFFFFF),
+    surfaceContainerLow: Color(0xFFECF5EE),
+    surfaceContainer: Color(0xFFE4EFE7),
+    surfaceContainerHigh: Color(0xFFDDE8E0),
+    surfaceContainerHighest: Color(0xFFD5E1D9),
+    outline: Color(0xFF707972),
+    outlineVariant: Color(0xFFBFC9C1),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: Color(0xFF2B332D),
+    onInverseSurface: Color(0xFFECF3EC),
+    inversePrimary: Color(0xFF66DBA4),
+  ),
 );
 
-const _sweetLimeTheme = AppTheme(
-  key: 'sweet-lime-dark',
-  label: 'Sweet Lime',
-  description: 'Vibrant lime & electric citrus on deep obsidian slate',
-  isDark: true,
-  bg: Color(0xFF0B0F0B),
-  surface: Color(0xFF121A13),
-  card: Color(0xFF18241A),
-  border: Color(0xFF263A29),
-  text: Color(0xFFF1F7F1),
-  sub: Color(0xFF98B39B),
-  dim: Color(0xFF627A65),
-  primary: Color(0xFF84E042),
-  teal: Color(0xFF38D9A9),
-  red: Color(0xFFF87171),
-  green: Color(0xFF84E042),
-  peach: Color(0xFFFACC15),
-  blue: Color(0xFF38BDF8),
-  gold: Color(0xFFA3E635),
-  sky: Color(0xFF2DD4BF),
-  lavender: Color(0xFFC084FC),
-  gray: Color(0xFF98B39B),
-  mdH1: Color(0xFFF1F7F1),
-  mdH2: Color(0xFFE2EFE2),
-  mdH3: Color(0xFFD2E7D2),
-  mdBold: Color(0xFF84E042),
-  mdItalic: Color(0xFFBBEF92),
-  mdCode: Color(0xFF84E042),
-  mdLink: Color(0xFF84E042),
-  mdBlockquote: Color(0xFF98B39B),
-  mdDel: Color(0xFF627A65),
-  mermaidPrimary: '#84E042',
-  mermaidBackground: '#18241A',
-  mermaidLine: '#F1F7F1',
+const _interceptorCrimsonDark = AppTheme(
+  key: 'interceptor-crimson-dark',
+  accentId: 'crimson',
+  label: 'Crimson Bloom',
+  description: 'Expressive magenta dark',
+  mermaidPrimary: '#FFB1C8',
+  mermaidBackground: '#2D1220',
+  mermaidLine: '#FCE9EE',
+  colorScheme: ColorScheme(
+    brightness: Brightness.dark,
+    primary: Color(0xFFFFB1C8),
+    onPrimary: Color(0xFF5E1133),
+    primaryContainer: Color(0xFF7B2949),
+    onPrimaryContainer: Color(0xFFFFD9E2),
+    secondary: Color(0xFFE5BDC6),
+    onSecondary: Color(0xFF432931),
+    secondaryContainer: Color(0xFF5C3F47),
+    onSecondaryContainer: Color(0xFFFFD9E2),
+    tertiary: Color(0xFFF4B79E),
+    onTertiary: Color(0xFF4B2717),
+    tertiaryContainer: Color(0xFF653D2B),
+    onTertiaryContainer: Color(0xFFFFDBCE),
+    error: Color(0xFFFFB4AB),
+    onError: Color(0xFF690005),
+    errorContainer: Color(0xFF93000A),
+    onErrorContainer: Color(0xFFFFDAD6),
+    surface: Color(0xFF1A0812),
+    onSurface: Color(0xFFFCE9EE),
+    onSurfaceVariant: Color(0xFFD5C1C6),
+    surfaceDim: Color(0xFF1A0812),
+    surfaceBright: Color(0xFF431D2E),
+    surfaceContainerLowest: Color(0xFF12030B),
+    surfaceContainerLow: Color(0xFF230D19),
+    surfaceContainer: Color(0xFF2D1220),
+    surfaceContainerHigh: Color(0xFF381829),
+    surfaceContainerHighest: Color(0xFF451F33),
+    outline: Color(0xFF9E8C91),
+    outlineVariant: Color(0xFF524347),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: Color(0xFFFCE9EE),
+    onInverseSurface: Color(0xFF38292D),
+    inversePrimary: Color(0xFF984061),
+  ),
 );
 
-const _sayInfernoTheme = AppTheme(
-  key: 'say-inferno-dark',
-  label: 'Say Inferno',
-  description: 'Blazing flame red & warm ember soot dark mode',
-  isDark: true,
-  bg: Color(0xFF120F10),
-  surface: Color(0xFF191416),
-  card: Color(0xFF221A1D),
-  border: Color(0xFF5C2016),
-  text: Color(0xFFFFFBF7),
-  sub: Color(0xFFC7B2AD),
-  dim: Color(0xFF85716C),
-  primary: Color(0xFFFF3D00),
-  teal: Color(0xFFFFB300),
-  red: Color(0xFFFF1744),
-  green: Color(0xFF00E676),
-  peach: Color(0xFFFF6D00),
-  blue: Color(0xFF00B0FF),
-  gold: Color(0xFFFFC400),
-  sky: Color(0xFF00E5FF),
-  lavender: Color(0xFFE040FB),
-  gray: Color(0xFFC7B2AD),
-  mdH1: Color(0xFFFFFBF7),
-  mdH2: Color(0xFFFFE0D6),
-  mdH3: Color(0xFFFFB399),
-  mdBold: Color(0xFFFF3D00),
-  mdItalic: Color(0xFFFF7A52),
-  mdCode: Color(0xFFFF3D00),
-  mdLink: Color(0xFFFF3D00),
-  mdBlockquote: Color(0xFFC7B2AD),
-  mdDel: Color(0xFF85716C),
-  mermaidPrimary: '#FF3D00',
-  mermaidBackground: '#221A1D',
-  mermaidLine: '#FFFBF7',
+const _interceptorCrimsonLight = AppTheme(
+  key: 'interceptor-crimson-light',
+  accentId: 'crimson',
+  label: 'Crimson Bloom',
+  description: 'Expressive magenta light',
+  mermaidPrimary: '#984061',
+  mermaidBackground: '#F9E8EC',
+  mermaidLine: '#22191C',
+  colorScheme: ColorScheme(
+    brightness: Brightness.light,
+    primary: Color(0xFF984061),
+    onPrimary: Color(0xFFFFFFFF),
+    primaryContainer: Color(0xFFFFD9E2),
+    onPrimaryContainer: Color(0xFF3E001D),
+    secondary: Color(0xFF74565F),
+    onSecondary: Color(0xFFFFFFFF),
+    secondaryContainer: Color(0xFFFFD9E2),
+    onSecondaryContainer: Color(0xFF2B151C),
+    tertiary: Color(0xFF805642),
+    onTertiary: Color(0xFFFFFFFF),
+    tertiaryContainer: Color(0xFFFFDBCE),
+    onTertiaryContainer: Color(0xFF321406),
+    error: Color(0xFFBA1A1A),
+    onError: Color(0xFFFFFFFF),
+    errorContainer: Color(0xFFFFDAD6),
+    onErrorContainer: Color(0xFF410002),
+    surface: Color(0xFFFFF8F8),
+    onSurface: Color(0xFF22191C),
+    onSurfaceVariant: Color(0xFF524347),
+    surfaceDim: Color(0xFFEED9DF),
+    surfaceBright: Color(0xFFFFF8F8),
+    surfaceContainerLowest: Color(0xFFFFFFFF),
+    surfaceContainerLow: Color(0xFFFDF0F2),
+    surfaceContainer: Color(0xFFF9E8EC),
+    surfaceContainerHigh: Color(0xFFF4E0E5),
+    surfaceContainerHighest: Color(0xFFEED9DF),
+    outline: Color(0xFF847377),
+    outlineVariant: Color(0xFFD5C1C6),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: Color(0xFF38292D),
+    onInverseSurface: Color(0xFFFAEEF1),
+    inversePrimary: Color(0xFFFFB1C8),
+  ),
+);
+
+const _interceptorAmberDark = AppTheme(
+  key: 'interceptor-amber-dark',
+  accentId: 'amber',
+  label: 'Solar Amber',
+  description: 'Warm honey ochre dark',
+  mermaidPrimary: '#E7C349',
+  mermaidBackground: '#282213',
+  mermaidLine: '#EBE6D9',
+  colorScheme: ColorScheme(
+    brightness: Brightness.dark,
+    primary: Color(0xFFE7C349),
+    onPrimary: Color(0xFF3C2F00),
+    primaryContainer: Color(0xFF574500),
+    onPrimaryContainer: Color(0xFFFFE171),
+    secondary: Color(0xFFD2C6A1),
+    onSecondary: Color(0xFF373016),
+    secondaryContainer: Color(0xFF4E462A),
+    onSecondaryContainer: Color(0xFFEFE2BC),
+    tertiary: Color(0xFFA9D0B4),
+    onTertiary: Color(0xFF143724),
+    tertiaryContainer: Color(0xFF2C4E39),
+    onTertiaryContainer: Color(0xFFC5ECCF),
+    error: Color(0xFFFFB4AB),
+    onError: Color(0xFF690005),
+    errorContainer: Color(0xFF93000A),
+    onErrorContainer: Color(0xFFFFDAD6),
+    surface: Color(0xFF161208),
+    onSurface: Color(0xFFEBE6D9),
+    onSurfaceVariant: Color(0xFFCBC6B4),
+    surfaceDim: Color(0xFF161208),
+    surfaceBright: Color(0xFF3F3725),
+    surfaceContainerLowest: Color(0xFF0F0C04),
+    surfaceContainerLow: Color(0xFF1F1A0D),
+    surfaceContainer: Color(0xFF282213),
+    surfaceContainerHigh: Color(0xFF332C1B),
+    surfaceContainerHighest: Color(0xFF3F3725),
+    outline: Color(0xFF959080),
+    outlineVariant: Color(0xFF4A4639),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: Color(0xFFEBE6D9),
+    onInverseSurface: Color(0xFF333027),
+    inversePrimary: Color(0xFF715C00),
+  ),
+);
+
+const _interceptorAmberLight = AppTheme(
+  key: 'interceptor-amber-light',
+  accentId: 'amber',
+  label: 'Solar Amber',
+  description: 'Warm honey ochre light',
+  mermaidPrimary: '#715C00',
+  mermaidBackground: '#F4F0E4',
+  mermaidLine: '#1E1C15',
+  colorScheme: ColorScheme(
+    brightness: Brightness.light,
+    primary: Color(0xFF715C00),
+    onPrimary: Color(0xFFFFFFFF),
+    primaryContainer: Color(0xFFFFE171),
+    onPrimaryContainer: Color(0xFF221B00),
+    secondary: Color(0xFF665E40),
+    onSecondary: Color(0xFFFFFFFF),
+    secondaryContainer: Color(0xFFEFE2BC),
+    onSecondaryContainer: Color(0xFF211B04),
+    tertiary: Color(0xFF436650),
+    onTertiary: Color(0xFFFFFFFF),
+    tertiaryContainer: Color(0xFFC5ECCF),
+    onTertiaryContainer: Color(0xFF002110),
+    error: Color(0xFFBA1A1A),
+    onError: Color(0xFFFFFFFF),
+    errorContainer: Color(0xFFFFDAD6),
+    onErrorContainer: Color(0xFF410002),
+    surface: Color(0xFFFFFDF6),
+    onSurface: Color(0xFF1E1C15),
+    onSurfaceVariant: Color(0xFF4A4639),
+    surfaceDim: Color(0xFFE9E4D9),
+    surfaceBright: Color(0xFFFFFDF6),
+    surfaceContainerLowest: Color(0xFFFFFFFF),
+    surfaceContainerLow: Color(0xFFFAF6EB),
+    surfaceContainer: Color(0xFFF4F0E4),
+    surfaceContainerHigh: Color(0xFFEFEADF),
+    surfaceContainerHighest: Color(0xFFE9E4D9),
+    outline: Color(0xFF7B7768),
+    outlineVariant: Color(0xFFCBC6B4),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: Color(0xFF333027),
+    onInverseSurface: Color(0xFFF7F2E6),
+    inversePrimary: Color(0xFFE7C349),
+  ),
+);
+
+const _interceptorCobaltDark = AppTheme(
+  key: 'interceptor-cobalt-dark',
+  accentId: 'cobalt',
+  label: 'Electric Cobalt',
+  description: 'High-tech oceanic dark',
+  mermaidPrimary: '#82CFFF',
+  mermaidBackground: '#122035',
+  mermaidLine: '#DEE4EB',
+  colorScheme: ColorScheme(
+    brightness: Brightness.dark,
+    primary: Color(0xFF82CFFF),
+    onPrimary: Color(0xFF00344F),
+    primaryContainer: Color(0xFF004C71),
+    onPrimaryContainer: Color(0xFFC8E6FF),
+    secondary: Color(0xFFB6C9D8),
+    onSecondary: Color(0xFF20333E),
+    secondaryContainer: Color(0xFF374955),
+    onSecondaryContainer: Color(0xFFD1E5F4),
+    tertiary: Color(0xFFCEBEE3),
+    onTertiary: Color(0xFF352B46),
+    tertiaryContainer: Color(0xFF4C415E),
+    onTertiaryContainer: Color(0xFFEADDFE),
+    error: Color(0xFFFFB4AB),
+    onError: Color(0xFF690005),
+    errorContainer: Color(0xFF93000A),
+    onErrorContainer: Color(0xFFFFDAD6),
+    surface: Color(0xFF070E18),
+    onSurface: Color(0xFFDEE4EB),
+    onSurfaceVariant: Color(0xFFC0C8CF),
+    surfaceDim: Color(0xFF070E18),
+    surfaceBright: Color(0xFF2B3A4F),
+    surfaceContainerLowest: Color(0xFF03070E),
+    surfaceContainerLow: Color(0xFF0C1625),
+    surfaceContainer: Color(0xFF122035),
+    surfaceContainerHigh: Color(0xFF192B44),
+    surfaceContainerHighest: Color(0xFF223755),
+    outline: Color(0xFF8A9299),
+    outlineVariant: Color(0xFF40484F),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: Color(0xFFDEE4EB),
+    onInverseSurface: Color(0xFF28313A),
+    inversePrimary: Color(0xFF006594),
+  ),
+);
+
+const _interceptorCobaltLight = AppTheme(
+  key: 'interceptor-cobalt-light',
+  accentId: 'cobalt',
+  label: 'Electric Cobalt',
+  description: 'High-tech oceanic light',
+  mermaidPrimary: '#006594',
+  mermaidBackground: '#E5EEF4',
+  mermaidLine: '#161D22',
+  colorScheme: ColorScheme(
+    brightness: Brightness.light,
+    primary: Color(0xFF006594),
+    onPrimary: Color(0xFFFFFFFF),
+    primaryContainer: Color(0xFFC8E6FF),
+    onPrimaryContainer: Color(0xFF001E30),
+    secondary: Color(0xFF4F616D),
+    onSecondary: Color(0xFFFFFFFF),
+    secondaryContainer: Color(0xFFD1E5F4),
+    onSecondaryContainer: Color(0xFF0A1D28),
+    tertiary: Color(0xFF645877),
+    onTertiary: Color(0xFFFFFFFF),
+    tertiaryContainer: Color(0xFFEADDFE),
+    onTertiaryContainer: Color(0xFF201631),
+    error: Color(0xFFBA1A1A),
+    onError: Color(0xFFFFFFFF),
+    errorContainer: Color(0xFFFFDAD6),
+    onErrorContainer: Color(0xFF410002),
+    surface: Color(0xFFF6FAFE),
+    onSurface: Color(0xFF161D22),
+    onSurfaceVariant: Color(0xFF40484F),
+    surfaceDim: Color(0xFFD7E3EA),
+    surfaceBright: Color(0xFFF6FAFE),
+    surfaceContainerLowest: Color(0xFFFFFFFF),
+    surfaceContainerLow: Color(0xFFEEF4F9),
+    surfaceContainer: Color(0xFFE5EEF4),
+    surfaceContainerHigh: Color(0xFFDFE8EF),
+    surfaceContainerHighest: Color(0xFFD7E3EA),
+    outline: Color(0xFF707880),
+    outlineVariant: Color(0xFFC0C8CF),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: Color(0xFF28313A),
+    onInverseSurface: Color(0xFFEDF2F8),
+    inversePrimary: Color(0xFF82CFFF),
+  ),
 );
 
 const appThemes = [
-  _sayInfernoTheme,
-  _sweetLimeTheme,
-  _roseGoldTheme,
-  _purpleBabyTheme,
-  _graphiteTheme,
-  _slateMonochromeTheme,
+  _interceptorDefaultDark,
+  _interceptorEmeraldDark,
+  _interceptorCrimsonDark,
+  _interceptorAmberDark,
+  _interceptorCobaltDark,
+  _interceptorDefaultLight,
+  _interceptorEmeraldLight,
+  _interceptorCrimsonLight,
+  _interceptorAmberLight,
+  _interceptorCobaltLight,
 ];
 
 final ValueNotifier<AppTheme> appThemeNotifier = ValueNotifier<AppTheme>(
-  _sweetLimeTheme,
+  _interceptorDefaultDark,
 );
 
 
@@ -567,43 +781,44 @@ Future<void> _loadAppToggleSettings() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── AdMob (Android only): initialize native SDK before loading ads ──
-  if (AppOpenAdManager.isSupported) {
-    try {
-      await MobileAds.instance.initialize();
-    } catch (e) {
-      debugPrint('[Ads] SDK init failed: $e');
-    }
-    unawaited(AppOpenAdManager.instance.bootstrap());
-  }
-
   // Initialize sqflite FFI for desktop platforms
   if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
 
-  try {
-    _initialAccentKey = await _loadInitialAccent();
-    U.applyTheme(_initialAccentKey);
-  } catch (e) {
-    debugPrint('Failed to load initial accent: $e');
-  }
-
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('theme_primary_color_value', appThemeNotifier.value.primary.toARGB32());
-  } catch (_) {}
-
-  try {
-    await _loadAppToggleSettings();
-  } catch (e) {
-    debugPrint('Failed to load app toggle settings: $e');
-  }
-
-  unawaited(RiveFile.initialize());
-
+  // Kick off Firebase & backend init immediately in parallel with local prefs
   appInitialization = _initializeApp();
+
+  // Initialize AdMob asynchronously so it never slows down app startup
+  if (AppOpenAdManager.isSupported) {
+    unawaited(() async {
+      try {
+        await MobileAds.instance.initialize();
+      } catch (e) {
+        debugPrint('[Ads] SDK init failed: $e');
+      }
+      await AppOpenAdManager.instance.bootstrap();
+    }());
+  }
+
+  await Future.wait([
+    () async {
+      try {
+        _initialAccentKey = await _loadInitialAccent();
+        U.applyTheme(_initialAccentKey);
+      } catch (e) {
+        debugPrint('Failed to load initial accent: $e');
+      }
+    }(),
+    () async {
+      try {
+        await _loadAppToggleSettings();
+      } catch (e) {
+        debugPrint('Failed to load app toggle settings: $e');
+      }
+    }(),
+  ]);
 
   if (!kIsWeb) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -681,18 +896,36 @@ class U {
 
 
   static bool get morningNotifEnabled => morningNotifEnabledNotifier.value;
+
+  static List<AppTheme> themesForBrightness(bool isDark) {
+    return appThemes.where((t) => t.isDark == isDark).toList();
+  }
+
+  static String counterpartKey(String key, bool targetIsDark) {
+    final current = themeForKey(key);
+    for (final theme in appThemes) {
+      if (theme.accentId == current.accentId && theme.isDark == targetIsDark) {
+        return theme.key;
+      }
+    }
+    return targetIsDark
+        ? _interceptorDefaultDark.key
+        : _interceptorDefaultLight.key;
+  }
+
   static AppTheme themeForKey(String? key) {
     for (final theme in appThemes) {
       if (theme.key == key) {
         return theme;
       }
     }
-    return _sweetLimeTheme;
+    return _interceptorDefaultDark;
   }
 
   static void applyTheme(String? key) {
     final next = themeForKey(key);
     appThemeNotifier.value = next;
+    _applySystemUiForTheme(next);
     unawaited(() async {
       try {
         final prefs = await SharedPreferences.getInstance();
@@ -838,7 +1071,6 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   final Future<AppInitializationState> _appInit = appInitialization;
-  bool _greetingCyclePassed = false;
 
   StreamSubscription<Uri>? _linkSub;
 
@@ -849,11 +1081,6 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     NotificationService.setAppForeground(true);
 
     _initDeepLinks();
-    Future.delayed(SplashScreen.minimumDisplayDuration, () {
-      if (mounted) {
-        setState(() => _greetingCyclePassed = true);
-      }
-    });
   }
 
   @override
@@ -949,8 +1176,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     return FutureBuilder<AppInitializationState>(
       future: _appInit,
       builder: (context, initSnapshot) {
-        if (initSnapshot.connectionState != ConnectionState.done ||
-            !_greetingCyclePassed) {
+        if (initSnapshot.connectionState != ConnectionState.done) {
           return const SplashScreen();
         }
         final initState =
@@ -973,16 +1199,15 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
             }
             if (snapshot.hasData) {
               unawaited(ChatService().touchPresence());
-              if (PlatformSupport.supportsNotifications) {
-
-              }
               return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                 stream: FirebaseFirestore.instance
                     .collection('users')
                     .doc(snapshot.data!.uid)
                     .snapshots(),
                 builder: (context, userSnapshot) {
-                  if (userSnapshot.connectionState == ConnectionState.waiting && !userSnapshot.hasData) {
+                  if (userSnapshot.connectionState == ConnectionState.waiting &&
+                      !userSnapshot.hasData &&
+                      U.cachedUniversityId.isEmpty) {
                     return const SplashScreen();
                   }
 
@@ -1035,40 +1260,32 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   }
 }
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
-  static const Duration minimumDisplayDuration = Duration(milliseconds: 2200);
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: U.bg,
+      backgroundColor: colorScheme.surfaceContainerLowest,
       body: Center(
-        child: SizedBox.expand(
-          child: RiveAnimation.asset(
-            'assets/rive/utopia.riv',
-            artboard: 'Android Medium - 1',
-            animations: const ['Timeline 1'],
-            fit: BoxFit.contain,
-            alignment: Alignment.center,
-            placeHolder: Center(
-              child: Text(
-                'UTOPIA',
-                style: GoogleFonts.outfit(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: U.sub,
-                  letterSpacing: 8,
-                ),
-              ),
+        child: Text.rich(
+          TextSpan(
+            text: 'utopia',
+            style: GoogleFonts.inter(
+              fontSize: 34,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -1.2,
+              color: colorScheme.onSurface,
             ),
+            children: [
+              TextSpan(
+                text: '.',
+                style: TextStyle(color: colorScheme.primary),
+              ),
+            ],
           ),
+          maxLines: 1,
         ),
       ),
     );

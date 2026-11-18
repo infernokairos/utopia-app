@@ -251,7 +251,7 @@ class _UtopiaSectionScreenState extends State<UtopiaSectionScreen> {
                     sub: 'Privacy policy & terms of service',
                     color: U.primary,
                     onTap: () => launchUrl(
-                      Uri.parse('https://inferalis.space/utopia/policy/'),
+                      Uri.parse('https://infernokairos.in/utopia/policy/'),
                       mode: LaunchMode.externalApplication,
                     ),
                   ),

@@ -991,18 +991,27 @@ class _UniChatScreenState extends State<UniChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: U.bg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: AppBar(
-        backgroundColor: U.bg,
+        backgroundColor: cs.surfaceContainerLowest,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleSpacing: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(0.6),
+          child: Divider(
+            height: 0.6,
+            thickness: 0.6,
+            color: cs.outlineVariant.withValues(alpha: 0.3),
+          ),
+        ),
         leading: _searchActive
             ? IconButton(
-                icon: Icon(Icons.arrow_back_rounded, color: U.text),
+                icon: Icon(Icons.arrow_back_rounded, color: cs.onSurface),
                 onPressed: () {
                   setState(() {
                     _searchActive = false;
@@ -1012,133 +1021,91 @@ class _UniChatScreenState extends State<UniChatScreen> {
                 },
               )
             : IconButton(
-                icon: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: isDarkTheme ? Colors.white10 : Colors.black.withValues(alpha: 0.04),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: U.text),
-                ),
+                icon: Icon(Icons.arrow_back_rounded, color: cs.onSurface),
                 onPressed: () => Navigator.pop(context),
               ),
         title: _searchActive
             ? Container(
                 height: 40,
                 decoration: BoxDecoration(
-                  color: isDarkTheme ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(20),
+                  color: cs.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: TextField(
                   controller: _searchController,
                   autofocus: true,
-                  style: GoogleFonts.plusJakartaSans(color: U.text, fontSize: 14),
+                  style: GoogleFonts.inter(color: cs.onSurface, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: 'Search campus messages...',
-                    hintStyle: GoogleFonts.plusJakartaSans(color: U.dim, fontSize: 13),
-                    prefixIcon: Icon(Icons.search_rounded, size: 18, color: U.dim),
+                    hintText: 'Search messages',
+                    hintStyle: GoogleFonts.inter(
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                      fontSize: 14,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      size: 18,
+                      color: cs.onSurfaceVariant,
+                    ),
                     suffixIcon: _searchQuery.isNotEmpty
-                        ? GestureDetector(
-                            onTap: () {
+                        ? IconButton(
+                            onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
                             },
-                            child: Icon(Icons.clear_rounded, size: 16, color: U.dim),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              size: 16,
+                              color: cs.onSurfaceVariant,
+                            ),
                           )
                         : null,
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    filled: false,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 12,
+                    ),
                   ),
                   onChanged: (val) {
                     setState(() => _searchQuery = val.trim());
                   },
                 ),
               )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Chat to Utopia',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: U.text,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2DD4BF).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          'CAMPUS',
-                          style: GoogleFonts.spaceGrotesk(
-                            color: const Color(0xFF2DD4BF),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        margin: const EdgeInsets.only(right: 5),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF2DD4BF),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      Flexible(
-                        child: Text(
-                          'Live Student Stream',
-                          style: GoogleFonts.spaceGrotesk(
-                            color: U.dim,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+            : Text(
+                'Campus Chat',
+                style: GoogleFonts.inter(
+                  color: cs.onSurface,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.4,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
         actions: [
           if (!_searchActive)
             IconButton(
-              icon: Icon(Icons.search_rounded, color: U.text, size: 22),
+              icon: Icon(
+                Icons.search_rounded,
+                color: cs.onSurfaceVariant,
+                size: 22,
+              ),
               tooltip: 'Search Messages',
               onPressed: () => setState(() => _searchActive = true),
             ),
           IconButton(
             icon: Icon(
               _utopiaChatNotifMode == 'all'
-                  ? Icons.notifications_active_rounded
+                  ? Icons.notifications_active_outlined
                   : (_utopiaChatNotifMode == 'replies'
-                      ? Icons.notifications_rounded
+                      ? Icons.notifications_none_rounded
                       : Icons.notifications_off_outlined),
-              color: _utopiaChatNotifMode == 'off' ? U.dim : U.teal,
-              size: 21,
+              color: _utopiaChatNotifMode == 'off'
+                  ? cs.onSurfaceVariant.withValues(alpha: 0.5)
+                  : cs.primary,
+              size: 22,
             ),
             tooltip: 'Notification Settings',
             onPressed: _showNotificationSettingsSheet,
@@ -1302,33 +1269,26 @@ class _UniChatScreenState extends State<UniChatScreen> {
 
                           return Column(
                             children: [
-                              // Date separator (sleek capsule pill)
+                              // Date separator (clean Interceptor pill)
                               if (showDateSep && ts != null)
                                 Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 14),
-                                  child: Row(
-                                    children: [
-                                      Expanded(child: Divider(color: U.border.withValues(alpha: 0.4), thickness: 0.5)),
-                                      Container(
-                                        margin: const EdgeInsets.symmetric(horizontal: 14),
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: isDarkTheme
-                                              ? Colors.white.withValues(alpha: 0.06)
-                                              : Colors.black.withValues(alpha: 0.04),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          _formatDateLabel(ts.toDate()),
-                                          style: GoogleFonts.spaceGrotesk(
-                                            color: U.dim,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                  child: Center(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: cs.surfaceContainer,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Text(
+                                        _formatDateLabel(ts.toDate()),
+                                        style: GoogleFonts.inter(
+                                          color: cs.onSurfaceVariant,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
-                                      Expanded(child: Divider(color: U.border.withValues(alpha: 0.4), thickness: 0.5)),
-                                    ],
+                                    ),
                                   ),
                                 ),
 
@@ -1400,29 +1360,11 @@ class _UniChatScreenState extends State<UniChatScreen> {
                           child: GestureDetector(
                             onTap: _scrollToBottom,
                             child: Container(
-                              width: 44,
-                              height: 44,
+                              width: 42,
+                              height: 42,
                               decoration: BoxDecoration(
-                                color: isDarkTheme
-                                    ? U.card.withValues(alpha: 0.95)
-                                    : Colors.white.withValues(alpha: 0.95),
+                                color: cs.surfaceContainerHigh,
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isDarkTheme
-                                      ? Colors.white.withValues(alpha: 0.12)
-                                      : U.border,
-                                  width: 1.0,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(
-                                      alpha: isDarkTheme ? 0.45 : 0.15,
-                                    ),
-                                    blurRadius: 14,
-                                    offset: const Offset(0, 4),
-                                    spreadRadius: 1,
-                                  ),
-                                ],
                               ),
                               child: Stack(
                                 alignment: Alignment.center,
@@ -1430,16 +1372,16 @@ class _UniChatScreenState extends State<UniChatScreen> {
                                 children: [
                                   Icon(
                                     Icons.keyboard_arrow_down_rounded,
-                                    color: U.primary,
-                                    size: 26,
+                                    color: cs.primary,
+                                    size: 24,
                                   ),
                                   if (_hasNewMessagesWhileScrolled)
-                                    const Positioned(
-                                      top: 1,
-                                      right: 1,
+                                    Positioned(
+                                      top: 2,
+                                      right: 2,
                                       child: UnreadIndicatorDot(
-                                        size: 10,
-                                        color: Color(0xFF2DD4BF),
+                                        size: 9,
+                                        color: cs.primary,
                                       ),
                                     ),
                                 ],
@@ -1550,13 +1492,21 @@ class _UniChatScreenState extends State<UniChatScreen> {
               ),
 
 
-            // Composer Bar
+            // Composer Bar (Interceptor-style flat stroke-free composer)
             Container(
-              color: U.bg,
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerLowest,
+                border: Border(
+                  top: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.28),
+                    width: 0.6,
+                  ),
+                ),
+              ),
               padding: EdgeInsets.fromLTRB(
-                12,
-                4,
-                12,
+                14,
+                8,
+                14,
                 MediaQuery.paddingOf(context).bottom + 10,
               ),
               child: Row(
@@ -1565,55 +1515,58 @@ class _UniChatScreenState extends State<UniChatScreen> {
                   // Media Picker Button
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2, right: 8),
-                    child: GestureDetector(
-                      onTap: _openMediaPicker,
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: isDarkTheme
-                              ? Colors.white.withValues(alpha: 0.06)
-                              : Colors.black.withValues(alpha: 0.04),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: U.border.withValues(alpha: 0.5),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _openMediaPicker,
+                        customBorder: const CircleBorder(),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: cs.surfaceContainer,
+                            shape: BoxShape.circle,
                           ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.add_reaction_outlined,
-                            color: U.teal,
-                            size: 22,
+                          child: Center(
+                            child: Icon(
+                              Icons.add_reaction_outlined,
+                              color: cs.onSurfaceVariant,
+                              size: 21,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
 
-                  // Text Field Input Stadium Pill
+                  // Clean stroke-free input pill
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: U.card,
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(
-                          color: U.border.withValues(alpha: 0.7),
-                        ),
+                        color: cs.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(24),
                       ),
                       child: TextField(
                         controller: _controller,
                         focusNode: _focusNode,
                         minLines: 1,
                         maxLines: 5,
-                        style: GoogleFonts.plusJakartaSans(color: U.text, fontSize: 15),
+                        style: GoogleFonts.inter(
+                          color: cs.onSurface,
+                          fontSize: 15,
+                        ),
                         decoration: InputDecoration(
-                          hintText: _editingMessageId != null ? 'Edit message...' : 'Chat with everyone...',
-                          hintStyle: GoogleFonts.plusJakartaSans(color: U.dim, fontSize: 14),
-                          filled: true,
-                          fillColor: Colors.transparent,
+                          hintText: _editingMessageId != null
+                              ? 'Edit message...'
+                              : 'Message campus...',
+                          hintStyle: GoogleFonts.inter(
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.65),
+                            fontSize: 14.5,
+                          ),
+                          filled: false,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 18,
-                            vertical: 12,
+                            vertical: 11,
                           ),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
@@ -1626,43 +1579,40 @@ class _UniChatScreenState extends State<UniChatScreen> {
                   ),
                   const SizedBox(width: 8),
 
-                  // Send Button
-                  GestureDetector(
-                    onTap: _send,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            U.primary,
-                            U.primary.withValues(alpha: 0.85),
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: U.primary.withValues(alpha: 0.28),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
+                  // Flat Send Button
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _send,
+                        customBorder: const CircleBorder(),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: cs.primary,
+                            shape: BoxShape.circle,
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: _sending
-                            ? SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  color: U.getContrastColor(U.primary),
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Icon(
-                                _editingMessageId != null ? Icons.check_rounded : Icons.send_rounded,
-                                color: U.getContrastColor(U.primary),
-                                size: 20,
-                              ),
+                          child: Center(
+                            child: _sending
+                                ? SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      color: cs.onPrimary,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Icon(
+                                    _editingMessageId != null
+                                        ? Icons.check_rounded
+                                        : Icons.arrow_upward_rounded,
+                                    color: cs.onPrimary,
+                                    size: 20,
+                                  ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -1736,16 +1686,11 @@ class _UniChatScreenState extends State<UniChatScreen> {
     final viewCount = _getViewCount(data);
     final reactions = data['reactions'] as Map<String, dynamic>?;
 
-    // M3-correct sent bubble palette: dark mode uses subdued primaryContainer,
-    // light mode keeps the vivid primary accent.
-    final sentBubbleColor = isDarkTheme ? U.primaryContainer : U.primary;
-    final sentBubbleColorEnd = isDarkTheme
-        ? Color.lerp(U.primaryContainer, Colors.black, 0.08)!
-        : U.primary.withValues(alpha: 0.88);
-    final sentTextColor = isDarkTheme ? U.onPrimaryContainer : U.getContrastColor(sentBubbleColor);
-    final sentSubColor = isDarkTheme
-        ? U.onPrimaryContainer.withValues(alpha: 0.75)
-        : U.getContrastColor(sentBubbleColor).withValues(alpha: 0.75);
+    // Flat M3-tonal sent/received bubbles (Interceptor simplicity)
+    final cs = Theme.of(context).colorScheme;
+    final sentBubbleColor = cs.primaryContainer;
+    final sentTextColor = cs.onPrimaryContainer;
+    final sentSubColor = cs.onPrimaryContainer.withValues(alpha: 0.72);
 
     Widget buildViewCountWidget({bool compact = false}) {
       return AnimatedSize(
@@ -1939,37 +1884,8 @@ class _UniChatScreenState extends State<UniChatScreen> {
           Container(
             padding: style.padding,
             decoration: BoxDecoration(
-              gradient: isMe
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        sentBubbleColor,
-                        sentBubbleColorEnd,
-                      ],
-                    )
-                  : null,
-              color: isMe
-                  ? null
-                  : (isDarkTheme ? const Color(0xFF1E242B) : const Color(0xFFF1F5F9)),
-              borderRadius: style.borderRadius,
-              border: isMe
-                  ? null
-                  : Border.all(
-                      color: isDarkTheme
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.06),
-                      width: 1.0,
-                    ),
-              boxShadow: [
-                BoxShadow(
-                  color: isMe
-                      ? sentBubbleColor.withValues(alpha: isDarkTheme ? 0.35 : 0.20)
-                      : Colors.black.withValues(alpha: isDarkTheme ? 0.20 : 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+              color: isMe ? sentBubbleColor : cs.surfaceContainer,
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Column(
               crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -1978,14 +1894,11 @@ class _UniChatScreenState extends State<UniChatScreen> {
                   _buildReplyPreviewSnippet(data['replyTo'], isMe, isDarkTheme),
                 Text(
                   rawText,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: isMe
-                        ? sentTextColor
-                        : (isDarkTheme ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A)),
+                  style: GoogleFonts.inter(
+                    color: isMe ? sentTextColor : cs.onSurface,
                     fontSize: style.fontSize,
-                    fontWeight: style.fontWeight,
-                    letterSpacing: style.letterSpacing,
-                    height: style.lineHeight,
+                    fontWeight: FontWeight.w400,
+                    height: 1.45,
                   ),
                 ),
                 ?linkWidget,
@@ -1993,9 +1906,9 @@ class _UniChatScreenState extends State<UniChatScreen> {
                 const SizedBox(height: 3),
                 Text(
                   '${_formatTime(ts)}${data['isEdited'] == true ? ' • edited' : ''}',
-                  style: GoogleFonts.spaceGrotesk(
-                    color: isMe ? sentSubColor : U.dim,
-                    fontSize: 10,
+                  style: GoogleFonts.inter(
+                    color: isMe ? sentSubColor : cs.onSurfaceVariant.withValues(alpha: 0.7),
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -2153,20 +2066,19 @@ class _UniChatScreenState extends State<UniChatScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 19,
-            height: 19,
+            width: 18,
+            height: 18,
             decoration: BoxDecoration(
-              color: senderColor.withValues(alpha: 0.2),
+              color: senderColor.withValues(alpha: 0.18),
               shape: BoxShape.circle,
-              border: Border.all(color: senderColor.withValues(alpha: 0.4), width: 1.0),
             ),
             child: Center(
               child: Text(
                 initial,
-                style: GoogleFonts.spaceGrotesk(
+                style: GoogleFonts.inter(
                   color: senderColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -2175,10 +2087,10 @@ class _UniChatScreenState extends State<UniChatScreen> {
           Flexible(
             child: Text(
               senderName,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 color: senderColor,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

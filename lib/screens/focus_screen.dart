@@ -1,35 +1,27 @@
 import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../main.dart';
-import '../theme/image_overlay_colors.dart';
-import 'attendance_screen.dart';
-import 'university_screen.dart';
-import 'uni_chat_screen.dart';
-import 'community_notes_screen.dart';
-import 'friends_screen.dart';
-import 'event_notifications_screen.dart';
-import 'sciwordle_screen.dart';
 import '../models/event_model.dart';
-import '../services/event_service.dart';
-import '../services/notification_service.dart';
-import '../widgets/app_motion.dart';
-import '../services/focus_supabase_service.dart';
-import '../services/secure_storage_service.dart';
 import '../services/attendance_cache_service.dart';
+import '../services/event_service.dart';
+import '../services/focus_supabase_service.dart';
+import '../services/notification_service.dart';
+import '../services/secure_storage_service.dart';
 import '../services/uni_chat_service.dart';
-import '../widgets/dynamic_attendance_card.dart';
-import '../widgets/dynamic_showcase_hero_card.dart';
+import '../widgets/app_motion.dart';
+import 'attendance_screen.dart';
+import 'event_notifications_screen.dart';
+import 'friends_screen.dart';
 import 'projects_feed_screen.dart';
-import '../utils/responsive_scale.dart';
+import 'uni_chat_screen.dart';
 
+/// Minimal Interceptor-inspired Home screen for UTOPIA.
 class FocusScreen extends StatefulWidget {
   const FocusScreen({super.key});
 
@@ -39,141 +31,27 @@ class FocusScreen extends StatefulWidget {
 
 class _FocusScreenState extends State<FocusScreen> {
   final _service = FocusSupabaseService();
-  String _quote = '';
-  String _greetingText = '';
   double? _attendancePct;
-  String _studentName = '';
   bool _isAttendanceConnected = false;
   DateTime? _lastAttendanceFetched;
   String _universityId = U.cachedUniversityId;
   String _universityName = U.cachedUniversityName;
-
   int _notificationCount = 0;
-
-  String get _userName {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return '';
-    final name = user.displayName;
-    if (name == null || name.isEmpty) return '';
-    return name.split(' ')[0];
-  }
-
-  String _generateRandomGreeting(String slot) {
-    final List<String> variants;
-    if (slot == 'morning') {
-      variants = const [
-        'Good morning',
-        'Top of the morning',
-        'Have a beautiful morning',
-        'Wishing you a bright morning',
-        'Wake up and conquer',
-        'Hello, early bird',
-        'A fresh start today',
-        'Time to shine',
-        'Good morning, champion',
-        'Hope your day starts great',
-        'Good morning, legend',
-        'Start with a smile',
-        'Embrace the fresh day',
-        'Morning, superstar',
-        'Ready for a great day?',
-        'A beautiful morning to you',
-        'Make today count',
-        'Rise up and thrive',
-        'Hello there, sunshine',
-      ];
-    } else if (slot == 'afternoon') {
-      variants = const [
-        'Good afternoon',
-        'Hope your afternoon is great',
-        'Good afternoon, legend',
-        'Happy midday',
-        'Keep going strong',
-        'Crushing your day?',
-        'Stay focused this afternoon',
-        'A wonderful afternoon to you',
-        'Enjoy this beautiful afternoon',
-        'Afternoon, superstar',
-        'Halfway to your goals',
-        'Keep up the great momentum',
-        'Midday motivation is here',
-        'Hope your day is productive',
-        'Taking a breath?',
-        'Good afternoon, champion',
-        'Stay energized',
-        'Make the rest of the day count',
-        'Afternoon, early achiever',
-        'Doing amazing things today',
-      ];
-    } else if (slot == 'evening') {
-      variants = const [
-        'Good evening',
-        'Hope you had a great day',
-        'Good evening, legend',
-        'Unwind and relax',
-        'Time to ease into the evening',
-        'A peaceful evening to you',
-        'Evening, superstar',
-        'Reflect on today\'s wins',
-        'Relax and recharge',
-        'Good evening, champion',
-        'You made it through the day',
-        'Rest up for tomorrow',
-        'Evening calm is here',
-        'Proud of your effort today',
-        'Time to slow down',
-        'Evening, early achiever',
-        'Cherish the quiet moments',
-        'Hope your evening is restful',
-        'Wrap up and relax',
-      ];
-    } else {
-      variants = const [
-        'Welcome back',
-        'Great to see you',
-        'Ready to dive in?',
-        'Let\'s get things done',
-        'Stay inspired today',
-        'Keep up the great work',
-        'Your journey continues',
-        'Focus and achieve',
-        'Make today amazing',
-        'Step by step forward',
-        'Believe in your progress',
-        'Every moment counts',
-        'Keep reaching higher',
-        'You\'ve got this',
-        'Stay curious and bold',
-        'Embrace every challenge',
-        'Small steps, big results',
-        'Create something great',
-        'Keep moving forward',
-      ];
-    }
-    final now = DateTime.now();
-    final dayIndex = now.difference(DateTime(now.year)).inDays;
-    final seed = dayIndex + now.hour;
-    final index = seed % variants.length;
-    return variants[index];
-  }
 
   @override
   void initState() {
     super.initState();
-    final timeSlot = ImageOverlayColors.getTimeSlot();
-    final greetingText = _generateRandomGreeting(timeSlot);
-    final userNameStr = _userName;
-    _greetingText = userNameStr.isEmpty ? greetingText : '$greetingText, $userNameStr';
     _loadData();
-    _loadQuote();
     _loadNotificationCount();
   }
 
   Future<void> _loadNotificationCount() async {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-      final dismissedIds = await NotificationService.getDismissedNotificationIds();
-      final lastClearedAt = await NotificationService.getLastNotificationsClearedAt();
+      final dismissedIds =
+          await NotificationService.getDismissedNotificationIds();
+      final lastClearedAt =
+          await NotificationService.getLastNotificationsClearedAt();
 
       int socialCount = 0;
       if (uid.isNotEmpty) {
@@ -194,11 +72,15 @@ class _FocusScreenState extends State<FocusScreen> {
               .limit(10)
               .get();
 
-          final validReqs = pendingReqs.docs.where((d) => !NotificationService.isNotificationDismissed(
-                d.id,
-                dismissedIds: dismissedIds,
-                lastClearedAt: lastClearedAt,
-              )).length;
+          final validReqs = pendingReqs.docs
+              .where(
+                (d) => !NotificationService.isNotificationDismissed(
+                  d.id,
+                  dismissedIds: dismissedIds,
+                  lastClearedAt: lastClearedAt,
+                ),
+              )
+              .length;
 
           final validWaves = unseenWaves.docs.where((d) {
             final createdAt = (d.data()['createdAt'] as Timestamp?)?.toDate();
@@ -230,28 +112,44 @@ class _FocusScreenState extends State<FocusScreen> {
         EventService.instance.getMyCertificates(),
       ]);
 
-      final endingSoon = (results[0] as List<EventModel>).where((e) => !NotificationService.isNotificationDismissed(
-            e.id,
-            dismissedIds: dismissedIds,
-            lastClearedAt: lastClearedAt,
-            createdAt: e.createdAt ?? e.date,
-          )).toList();
-      final newEvents = (results[1] as List<EventModel>).where((e) => !NotificationService.isNotificationDismissed(
-            e.id,
-            dismissedIds: dismissedIds,
-            lastClearedAt: lastClearedAt,
-            createdAt: e.createdAt ?? e.date,
-          )).toList();
-      final certificates = (results[2] as List<EventCertificate>).where((c) => !NotificationService.isNotificationDismissed(
-            c.id,
-            dismissedIds: dismissedIds,
-            lastClearedAt: lastClearedAt,
-            createdAt: c.issuedAt,
-          )).toList();
+      final endingSoon = (results[0] as List<EventModel>)
+          .where(
+            (e) => !NotificationService.isNotificationDismissed(
+              e.id,
+              dismissedIds: dismissedIds,
+              lastClearedAt: lastClearedAt,
+              createdAt: e.createdAt ?? e.date,
+            ),
+          )
+          .toList();
+      final newEvents = (results[1] as List<EventModel>)
+          .where(
+            (e) => !NotificationService.isNotificationDismissed(
+              e.id,
+              dismissedIds: dismissedIds,
+              lastClearedAt: lastClearedAt,
+              createdAt: e.createdAt ?? e.date,
+            ),
+          )
+          .toList();
+      final certificates = (results[2] as List<EventCertificate>)
+          .where(
+            (c) => !NotificationService.isNotificationDismissed(
+              c.id,
+              dismissedIds: dismissedIds,
+              lastClearedAt: lastClearedAt,
+              createdAt: c.issuedAt,
+            ),
+          )
+          .toList();
 
       if (mounted) {
         setState(() {
-          _notificationCount = socialCount + endingSoon.length + newEvents.length + certificates.length;
+          _notificationCount =
+              socialCount +
+              endingSoon.length +
+              newEvents.length +
+              certificates.length;
         });
       }
     } catch (_) {}
@@ -261,9 +159,14 @@ class _FocusScreenState extends State<FocusScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
         final uniId = userDoc.data()?['selectedUniversityId'] as String?;
-        final uniName = userDoc.data()?['universityName'] as String? ?? userDoc.data()?['university'] as String?;
+        final uniName =
+            userDoc.data()?['universityName'] as String? ??
+            userDoc.data()?['university'] as String?;
         if (uniId != null && uniId.isNotEmpty) {
           _universityId = uniId;
           U.cachedUniversityId = uniId;
@@ -274,108 +177,14 @@ class _FocusScreenState extends State<FocusScreen> {
         }
       }
       await _service.initialize();
-      // Start download sync in background to update local SQLite
-      _service.syncDownAllData().then((_) {
-        _loadStats();
-      });
+      _service.syncDownAllData().then((_) => _loadStats());
       _loadStats();
     } catch (_) {}
-  }
-
-  Future<void> _loadQuote() async {
-    final now = DateTime.now();
-    final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final cachedQuote = prefs.getString('daily_quote_text');
-      final cachedAuthor = prefs.getString('daily_quote_author');
-      final cachedDate = prefs.getString('daily_quote_date');
-
-      if (cachedQuote != null && cachedAuthor != null && cachedDate == todayStr) {
-        // Today's quote is already cached. Show it immediately and skip fetching.
-        if (mounted) {
-          setState(() {
-            _quote = '"$cachedQuote" — $cachedAuthor';
-          });
-        }
-        return;
-      }
-
-      // If a cache exists from a previous day, show it immediately before fetching
-      if (cachedQuote != null && cachedAuthor != null) {
-        if (mounted) {
-          setState(() {
-            _quote = '"$cachedQuote" — $cachedAuthor';
-          });
-        }
-      } else {
-        // Otherwise show nothing until fetched
-        if (mounted) {
-          setState(() {
-            _quote = '';
-          });
-        }
-      }
-
-      // Fetch fresh quote from ZenQuotes API
-      final response = await http.get(Uri.parse('https://zenquotes.io/api/today')).timeout(const Duration(seconds: 10));
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        if (data.isNotEmpty && data[0] is Map) {
-          final q = data[0]['q'] as String?;
-          final a = data[0]['a'] as String?;
-          if (q != null && a != null && q.isNotEmpty && a.isNotEmpty) {
-            // Cache the fresh quote, author, and date
-            await prefs.setString('daily_quote_text', q);
-            await prefs.setString('daily_quote_author', a);
-            await prefs.setString('daily_quote_date', todayStr);
-
-            if (mounted) {
-              setState(() {
-                _quote = '"$q" — $a';
-              });
-            }
-            return;
-          }
-        }
-      }
-
-      // If API fails and no cache exists at all, show hardcoded fallback
-      if (cachedQuote == null || cachedAuthor == null) {
-        if (mounted) {
-          setState(() {
-            _quote = '"Focus on progress, not perfection." — Unknown';
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint('Error fetching/loading daily quote: $e');
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final cachedQuote = prefs.getString('daily_quote_text');
-        final cachedAuthor = prefs.getString('daily_quote_author');
-        if (cachedQuote == null || cachedAuthor == null) {
-          if (mounted) {
-            setState(() {
-              _quote = '"Focus on progress, not perfection." — Unknown';
-            });
-          }
-        }
-      } catch (_) {
-        if (mounted) {
-          setState(() {
-            _quote = '"Focus on progress, not perfection." — Unknown';
-          });
-        }
-      }
-    }
   }
 
   Future<void> _loadStats() async {
     try {
       double? attendancePct;
-      String studentName = '';
       bool isConnected = false;
       DateTime? lastFetched;
       try {
@@ -386,12 +195,15 @@ class _FocusScreenState extends State<FocusScreen> {
           if (roll != null) {
             final cachedAttendance = await AttendanceCacheService.load(roll);
             if (cachedAttendance != null) {
-              attendancePct = (cachedAttendance.data['overallPercentage'] as num?)?.toDouble();
-              studentName = (cachedAttendance.data['studentName'] as String? ?? '').trim();
+              attendancePct =
+                  (cachedAttendance.data['overallPercentage'] as num?)
+                      ?.toDouble();
               lastFetched = cachedAttendance.cachedAt;
             } else {
               final prefs = await SharedPreferences.getInstance();
-              final currJson = prefs.getString('attendance_history_curr_${roll.trim().toUpperCase()}');
+              final currJson = prefs.getString(
+                'attendance_history_curr_${roll.trim().toUpperCase()}',
+              );
               if (currJson != null) {
                 try {
                   final Map<String, dynamic> currMap = jsonDecode(currJson);
@@ -399,7 +211,8 @@ class _FocusScreenState extends State<FocusScreen> {
                   if (tsStr != null) {
                     lastFetched = DateTime.tryParse(tsStr);
                   }
-                  attendancePct ??= (currMap['overallPercentage'] as num?)?.toDouble();
+                  attendancePct ??=
+                      (currMap['overallPercentage'] as num?)?.toDouble();
                 } catch (_) {}
               }
             }
@@ -412,7 +225,6 @@ class _FocusScreenState extends State<FocusScreen> {
       if (mounted) {
         setState(() {
           _attendancePct = attendancePct;
-          _studentName = studentName;
           _isAttendanceConnected = isConnected;
           _lastAttendanceFetched = lastFetched;
         });
@@ -420,540 +232,184 @@ class _FocusScreenState extends State<FocusScreen> {
     } catch (_) {}
   }
 
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${date.day} ${months[date.month - 1]}';
+  }
 
+  String get _attendanceSubtitle {
+    if (!_isAttendanceConnected) {
+      return 'Connect portal';
+    }
+    if (_lastAttendanceFetched != null) {
+      return 'Synced ${_formatDate(_lastAttendanceFetched!)}';
+    }
+    return 'Portal connected';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDarkTheme = appThemeNotifier.value.isDark;
-    final rs = ResponsiveScale.of(context);
-    final padH = rs.horizontalPadding;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isAditya = U.isAdityaCollege(_universityId, _universityName);
+    final hasAttendancePct =
+        _isAttendanceConnected &&
+        _attendancePct != null &&
+        _attendancePct! > 0;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: colorScheme.surfaceContainerLowest,
       body: SafeArea(
         bottom: false,
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
-            child: SingleChildScrollView(
+            child: ListView(
               physics: const BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: rs.vs(20, min: 14, max: 26)),
-
-                  // ── Header: Utopia brand identity & Notifications ──
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: padH),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+              children: [
+                // ── Header (exact Interceptor HubScreen style) ──
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'utopia',
+                          style: GoogleFonts.inter(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -1.2,
+                            color: colorScheme.onSurface,
+                          ),
                           children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Utopia',
-                                  style: TextStyle(
-                                    fontFamily: 'OrangeAvenue',
-                                    fontSize: rs.font(38, min: 32, max: 46),
-                                    fontWeight: FontWeight.w700,
-                                    color: U.text,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                                SizedBox(width: rs.s(4, min: 3, max: 6)),
-                                Padding(
-                                  padding: EdgeInsets.only(top: rs.s(8, min: 6, max: 10)),
-                                  child: Transform.rotate(
-                                    angle: 30 * 3.1415926535 / 180,
-                                    child: Transform.scale(
-                                      scaleX: -1,
-                                      child: Image.asset(
-                                        'assets/focus screen/leaves.png',
-                                        width: rs.s(22, min: 18, max: 28),
-                                        height: rs.s(22, min: 18, max: 28),
-                                        fit: BoxFit.contain,
-                                        color: U.primary,
-                                        colorBlendMode: BlendMode.srcIn,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            M3Pressable(
-                              onTap: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const EventNotificationsScreen(),
-                                  ),
-                                );
-                                _loadNotificationCount();
-                              },
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  Container(
-                                    width: rs.s(42, min: 36, max: 48),
-                                    height: rs.s(42, min: 36, max: 48),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: isDarkTheme
-                                          ? U.surfaceContainerHighest.withValues(alpha: 0.6)
-                                          : U.surfaceContainerHighest.withValues(alpha: 0.8),
-                                      border: Border.all(
-                                        color: U.outlineVariant.withValues(alpha: isDarkTheme ? 0.3 : 0.5),
-                                        width: 0.8,
-                                      ),
-                                    ),
-                                    child: Icon(
-                                      Icons.notifications_none_rounded,
-                                      color: U.text,
-                                      size: rs.s(20, min: 17, max: 24),
-                                    ),
-                                  ),
-                                  if (_notificationCount > 0)
-                                    Positioned(
-                                      top: -2,
-                                      right: -2,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: U.primary,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: U.bg,
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        constraints: const BoxConstraints(
-                                          minWidth: 16,
-                                          minHeight: 16,
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            _notificationCount > 9 ? '9+' : _notificationCount.toString(),
-                                            style: GoogleFonts.robotoFlex(
-                                              color: U.getContrastColor(U.primary),
-                                              fontSize: 8,
-                                              fontWeight: FontWeight.bold,
-                                              height: 1.0,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
+                            TextSpan(
+                              text: '.',
+                              style: TextStyle(color: colorScheme.primary),
                             ),
                           ],
                         ),
-                        SizedBox(height: rs.vs(12, min: 8, max: 16)),
-                        // Greeting text
-                        (() {
-                          final commaIndex = _greetingText.indexOf(',');
-                          if (commaIndex != -1) {
-                            final greetingPart = _greetingText.substring(0, commaIndex);
-                            final namePart = _greetingText.substring(commaIndex + 1).trim();
-                            return RichText(
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: '$greetingPart, ',
-                                    style: GoogleFonts.robotoFlex(
-                                      fontSize: rs.font(22, min: 18, max: 26),
-                                      fontWeight: FontWeight.w300,
-                                      color: U.text,
-                                      letterSpacing: -0.3,
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: namePart,
-                                    style: GoogleFonts.robotoFlex(
-                                      fontSize: rs.font(23, min: 19, max: 27),
-                                      fontWeight: FontWeight.w700,
-                                      color: U.text,
-                                      letterSpacing: -0.4,
-                                    ),
-                                  ),
-                                ],
+                        maxLines: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        IconButton(
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const EventNotificationsScreen(),
                               ),
                             );
-                          } else {
-                            return Text(
-                              _greetingText,
-                              style: GoogleFonts.robotoFlex(
-                                fontSize: rs.font(22, min: 18, max: 26),
-                                fontWeight: FontWeight.w400,
-                                color: U.text,
-                                letterSpacing: -0.3,
-                              ),
-                            );
-                          }
-                        })(),
-                        if (_quote.isNotEmpty) ...[
-                          SizedBox(height: rs.vs(12, min: 8, max: 16)),
-                          Container(
-                            padding: EdgeInsets.only(left: rs.s(12, min: 9, max: 16)),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                left: BorderSide(
-                                  color: U.primary.withValues(alpha: 0.4),
-                                  width: 2.0,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              _quote,
-                              style: GoogleFonts.newsreader(
-                                fontSize: rs.font(14.5, min: 12.5, max: 17),
-                                fontWeight: FontWeight.w400,
-                                fontStyle: FontStyle.italic,
-                                color: U.sub,
-                                height: 1.45,
+                            _loadNotificationCount();
+                          },
+                          icon: const Icon(Icons.notifications_none_rounded),
+                          color: colorScheme.onSurfaceVariant,
+                          iconSize: 24,
+                          tooltip: 'Notifications',
+                        ),
+                        if (_notificationCount > 0)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                shape: BoxShape.circle,
                               ),
                             ),
                           ),
-                        ],
                       ],
                     ),
-                  ).animate()
-                      .fadeIn(duration: 500.ms, curve: Curves.easeOutCubic)
-                      .slideY(begin: 0.1, end: 0, duration: 500.ms, curve: Curves.easeOutCubic),
+                  ],
+                ),
+                const SizedBox(height: 32),
 
-                  SizedBox(height: rs.vs(18, min: 12, max: 24)),
-
-
-
-                  // ── Hero Section: Attendance Card for Aditya colleges, Project Showcase Card for all other colleges ──
-                  if (U.isAdityaCollege(_universityId, _universityName))
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padH),
-                      child: DynamicMotionAttendanceCard(
-                        isConnected: _isAttendanceConnected,
-                        attendancePct: _attendancePct,
-                        studentName: _studentName,
-                        lastFetched: _lastAttendanceFetched,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const AttendanceScreen()),
-                        ).then((_) => _loadData()),
+                // ── Primary Card (exact Interceptor Moodify card style) ──
+                if (isAditya)
+                  _PrimaryBannerCard(
+                    icon: Icons.donut_large_rounded,
+                    title: 'Attendance',
+                    subtitle: _attendanceSubtitle,
+                    trailingValue: hasAttendancePct
+                        ? '${_attendancePct!.toStringAsFixed(1)}%'
+                        : null,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AttendanceScreen(),
                       ),
-                    ).animate()
-                        .fadeIn(delay: 250.ms, duration: 500.ms)
-                        .slideY(begin: 0.1, end: 0, delay: 250.ms, duration: 500.ms, curve: Curves.easeOutCubic)
-                  else
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padH),
-                      child: DynamicShowcaseHeroCard(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ProjectsFeedScreen()),
-                        ),
-                      ),
-                    ).animate()
-                        .fadeIn(delay: 250.ms, duration: 500.ms)
-                        .slideY(begin: 0.1, end: 0, delay: 250.ms, duration: 500.ms, curve: Curves.easeOutCubic),
-
-                  SizedBox(height: rs.vs(16, min: 12, max: 22)),
-
-                  // ── People & Chat to Utopia Square Cards ──
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: padH),
-                    child: IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // SciWord Game Card
-                          Expanded(
-                            child: M3Pressable(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  buildForwardRoute(const SciwordleScreen()),
-                                );
-                              },
-                              child: Container(
-                                padding: EdgeInsets.all(rs.s(18, min: 14, max: 22)),
-                                decoration: BoxDecoration(
-                                  color: U.surfaceContainer,
-                                  borderRadius: BorderRadius.circular(rs.s(26, min: 20, max: 30)),
-                                  border: Border.all(
-                                    color: U.outlineVariant.withValues(alpha: isDarkTheme ? 0.3 : 0.45),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Container(
-                                      width: rs.s(48, min: 40, max: 56),
-                                      height: rs.s(48, min: 40, max: 56),
-                                      decoration: BoxDecoration(
-                                        color: U.primaryContainer,
-                                        borderRadius: BorderRadius.circular(rs.s(16, min: 13, max: 19)),
-                                      ),
-                                      child: Center(
-                                        child: Icon(
-                                          Icons.extension_rounded,
-                                          color: U.onPrimaryContainer,
-                                          size: rs.s(24, min: 20, max: 28),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: rs.vs(16, min: 10, max: 20)),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          'SciWord',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.robotoFlex(
-                                            color: U.text,
-                                            fontSize: rs.font(16.5, min: 14.5, max: 19),
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Daily word game',
-                                          style: GoogleFonts.robotoFlex(
-                                            fontSize: rs.font(12, min: 10.5, max: 13.5),
-                                            color: U.sub,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: rs.s(12, min: 8, max: 16)),
-                          // Chat to Utopia Card
-                          Expanded(
-                            child: Builder(
-                              builder: (context) {
-                                final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
-                                return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                                  stream: currentUid.isNotEmpty
-                                      ? FirebaseFirestore.instance.collection('users').doc(currentUid).snapshots()
-                                      : const Stream.empty(),
-                                  builder: (context, userSnap) {
-                                    final liveUniId = userSnap.data?.data()?['selectedUniversityId'] as String?;
-                                    final uniId = (liveUniId != null && liveUniId.isNotEmpty)
-                                        ? liveUniId
-                                        : (U.cachedUniversityId.isNotEmpty ? U.cachedUniversityId : 'support');
-                                    if (liveUniId != null && liveUniId.isNotEmpty && liveUniId != U.cachedUniversityId) {
-                                      U.cachedUniversityId = liveUniId;
-                                    }
-
-                                    return StreamBuilder<bool>(
-                                      stream: UniChatService().unreadStatusStream(uniId),
-                                      initialData: false,
-                                      builder: (context, snapshot) {
-                                        final hasUnread = snapshot.data ?? false;
-                                        return M3Pressable(
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(builder: (_) => UniChatScreen(universityId: uniId)),
-                                            );
-                                          },
-                                          child: Container(
-                                            padding: EdgeInsets.all(rs.s(18, min: 14, max: 22)),
-                                            decoration: BoxDecoration(
-                                              color: U.surfaceContainer,
-                                              borderRadius: BorderRadius.circular(rs.s(26, min: 20, max: 30)),
-                                              border: Border.all(
-                                                color: U.outlineVariant.withValues(alpha: isDarkTheme ? 0.3 : 0.45),
-                                                width: 0.8,
-                                              ),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Container(
-                                                  width: rs.s(48, min: 40, max: 56),
-                                                  height: rs.s(48, min: 40, max: 56),
-                                                  decoration: BoxDecoration(
-                                                    color: U.secondaryContainer,
-                                                    borderRadius: BorderRadius.circular(rs.s(16, min: 13, max: 19)),
-                                                  ),
-                                                  child: Center(
-                                                    child: Stack(
-                                                      alignment: Alignment.topRight,
-                                                      children: [
-                                                        Icon(
-                                                          Icons.forum_rounded,
-                                                          color: U.onSecondaryContainer,
-                                                          size: rs.s(24, min: 20, max: 28),
-                                                        ),
-                                                        if (hasUnread)
-                                                          Container(
-                                                            width: rs.s(7, min: 5, max: 9),
-                                                            height: rs.s(7, min: 5, max: 9),
-                                                            decoration: const BoxDecoration(
-                                                              color: Colors.redAccent,
-                                                              shape: BoxShape.circle,
-                                                            ),
-                                                          ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                                SizedBox(height: rs.vs(16, min: 10, max: 20)),
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Text(
-                                                      'Chat to Utopia',
-                                                      style: GoogleFonts.robotoFlex(
-                                                        color: U.text,
-                                                        fontSize: rs.font(16.5, min: 14.5, max: 19),
-                                                        fontWeight: FontWeight.w700,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      'Campus chat',
-                                                      style: GoogleFonts.robotoFlex(
-                                                        fontSize: rs.font(12, min: 10.5, max: 13.5),
-                                                        color: U.sub,
-                                                      ),
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-                        ],
+                    ).then((_) => _loadData()),
+                  )
+                else
+                  _PrimaryBannerCard(
+                    icon: Icons.rocket_launch_outlined,
+                    title: 'Projects',
+                    subtitle: 'Explore & showcase campus builds',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ProjectsFeedScreen(),
                       ),
                     ),
-                  ).animate()
-                      .fadeIn(delay: 300.ms, duration: 500.ms)
-                      .slideY(begin: 0.1, end: 0, delay: 300.ms, duration: 500.ms, curve: Curves.easeOutCubic),
+                  ),
+                const SizedBox(height: 36),
 
-                  SizedBox(height: rs.vs(16, min: 12, max: 22)),
+                // ── Section Header (exact Interceptor Collection header style) ──
+                Text(
+                  'Explore',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 14),
 
-                  // ── Friends Card (Rectangle) ──
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: padH),
-                    child: M3Pressable(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          buildForwardRoute(const FriendsScreen()),
-                        );
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(rs.s(20, min: 16, max: 24)),
-                        decoration: BoxDecoration(
-                          color: U.surfaceContainer,
-                          borderRadius: BorderRadius.circular(rs.s(26, min: 20, max: 30)),
-                          border: Border.all(
-                            color: U.outlineVariant.withValues(alpha: isDarkTheme ? 0.3 : 0.45),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: rs.s(50, min: 42, max: 58),
-                              height: rs.s(50, min: 42, max: 58),
-                              decoration: BoxDecoration(
-                                color: U.secondaryContainer,
-                                borderRadius: BorderRadius.circular(rs.s(16, min: 13, max: 19)),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.people_rounded,
-                                  color: U.onSecondaryContainer,
-                                  size: rs.s(25, min: 21, max: 29),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: rs.s(16, min: 12, max: 20)),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Friends',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.robotoFlex(
-                                      color: U.text,
-                                      fontSize: rs.font(16.5, min: 14.5, max: 19),
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Chat with friends',
-                                    style: GoogleFonts.robotoFlex(
-                                      fontSize: rs.font(12, min: 10.5, max: 13.5),
-                                      color: U.sub,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(width: rs.s(12, min: 8, max: 16)),
-                            Container(
-                              width: rs.s(36, min: 30, max: 42),
-                              height: rs.s(36, min: 30, max: 42),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: U.surfaceContainerHighest,
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  color: U.sub,
-                                  size: rs.s(14, min: 12, max: 16),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                // ── Squared Cards Grid (exact Interceptor Drive-style cards) ──
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  childAspectRatio: 1.0,
+                  children: [
+                    _CampusChatSquaredCard(),
+                    _SquaredHubCard(
+                      title: 'Friends',
+                      icon: Icons.people_outline_rounded,
+                      onTap: () => Navigator.push(
+                        context,
+                        buildForwardRoute(const FriendsScreen()),
                       ),
                     ),
-                  ).animate()
-                      .fadeIn(delay: 350.ms, duration: 500.ms)
-                      .slideY(begin: 0.1, end: 0, delay: 350.ms, duration: 500.ms, curve: Curves.easeOutCubic),
-
-
-
-                  SizedBox(height: rs.vs(120, min: 90, max: 140)),
-                ],
-              ),
+                  ],
+                ),
+              ]
+                  .animate(interval: 40.ms)
+                  .fadeIn(duration: 300.ms, curve: Curves.easeOut),
             ),
           ),
         ),
@@ -962,77 +418,210 @@ class _FocusScreenState extends State<FocusScreen> {
   }
 }
 
-class PressableCard extends StatelessWidget {
-  final Widget child;
+/// Primary stroke-free banner card modeled after Interceptor's Moodify card.
+class _PrimaryBannerCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String? trailingValue;
   final VoidCallback onTap;
-  final double scaleFactor;
 
-  const PressableCard({
-    super.key,
-    required this.child,
+  const _PrimaryBannerCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.trailingValue,
     required this.onTap,
-    this.scaleFactor = 0.965,
   });
 
   @override
   Widget build(BuildContext context) {
-    return M3Pressable(
-      onTap: onTap,
-      scaleFactor: scaleFactor,
-      child: child,
+    final colorScheme = Theme.of(context).colorScheme;
+    final muted = colorScheme.onSurfaceVariant.withValues(alpha: 0.65);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          child: Row(
+            children: [
+              Icon(icon, size: 24, color: colorScheme.primary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.4,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 12.5,
+                        color: muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailingValue != null) ...[
+                const SizedBox(width: 12),
+                Text(
+                  trailingValue!,
+                  style: GoogleFonts.inter(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+              Icon(Icons.chevron_right_rounded, size: 20, color: muted),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
-class AnimatedWaveform extends StatefulWidget {
-  final Color color;
-  const AnimatedWaveform({super.key, required this.color});
+/// Clean, stroke-free squared card modeled after Interceptor's _SquaredFolderCard.
+class _SquaredHubCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final bool showBadge;
+  final VoidCallback onTap;
 
-  @override
-  State<AnimatedWaveform> createState() => _AnimatedWaveformState();
-}
-
-class _AnimatedWaveformState extends State<AnimatedWaveform> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  const _SquaredHubCard({
+    required this.title,
+    required this.icon,
+    this.showBadge = false,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final heights = [0.35, 0.75, 0.5, 0.95, 0.65, 0.45, 0.25];
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: List.generate(7, (index) {
-            final animatedVal = _controller.value;
-            final shift = sin((animatedVal * 2 * pi) + (index * 0.8));
-            final currentHeight = 10.0 + 18.0 * heights[index] * (shift + 1.2);
-            return Container(
-              width: 3.5,
-              height: currentHeight.clamp(4.0, 32.0),
-              margin: const EdgeInsets.symmetric(horizontal: 1.8),
-              decoration: BoxDecoration(
-                color: widget.color.withValues(alpha: 0.75),
-                borderRadius: BorderRadius.circular(2),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                        color: colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (showBadge)
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+              Expanded(
+                child: Center(
+                  child: Icon(
+                    icon,
+                    size: 76,
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Campus Chat squared card with live unread stream indicator.
+class _CampusChatSquaredCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: currentUid.isNotEmpty
+          ? FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUid)
+              .snapshots()
+          : const Stream.empty(),
+      builder: (context, userSnap) {
+        final liveUniId =
+            userSnap.data?.data()?['selectedUniversityId'] as String?;
+        final uniId = (liveUniId != null && liveUniId.isNotEmpty)
+            ? liveUniId
+            : (U.cachedUniversityId.isNotEmpty
+                ? U.cachedUniversityId
+                : 'support');
+        if (liveUniId != null &&
+            liveUniId.isNotEmpty &&
+            liveUniId != U.cachedUniversityId) {
+          U.cachedUniversityId = liveUniId;
+        }
+
+        return StreamBuilder<bool>(
+          stream: UniChatService().unreadStatusStream(uniId),
+          initialData: false,
+          builder: (context, snapshot) {
+            final hasUnread = snapshot.data ?? false;
+            return _SquaredHubCard(
+              title: 'Campus Chat',
+              icon: Icons.forum_outlined,
+              showBadge: hasUnread,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => UniChatScreen(universityId: uniId),
+                ),
               ),
             );
-          }),
+          },
         );
       },
     );

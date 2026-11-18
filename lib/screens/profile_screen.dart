@@ -210,27 +210,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context) => _ThemeStyleSheet(currentKey: initialThemeKey),
     );
 
-    if (selectedKey != null && selectedKey != initialThemeKey) {
+    final finalKey = selectedKey ?? U.currentThemeKey;
+    if (finalKey != initialThemeKey) {
       setState(() => _updatingTheme = true);
-      U.applyTheme(selectedKey);
-      await CacheService().saveAppSetting('theme_accent', selectedKey);
+      U.applyTheme(finalKey);
+      await CacheService().saveAppSetting('theme_accent', finalKey);
       try {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'themeAccent': selectedKey,
+          'themeAccent': finalKey,
         }, SetOptions(merge: true));
       } catch (e) {
         debugPrint('Error saving theme: $e');
       }
 
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const AppShell()),
-          (route) => false,
-        );
+        setState(() => _updatingTheme = false);
       }
-    } else if (selectedKey == null && U.currentThemeKey != initialThemeKey) {
-      U.applyTheme(initialThemeKey);
     }
+  }
+
+  Future<void> _toggleDarkMode(bool isDark) async {
+    HapticFeedback.selectionClick();
+    final nextKey = U.counterpartKey(U.currentThemeKey, isDark);
+    U.applyTheme(nextKey);
+    await CacheService().saveAppSetting('theme_accent', nextKey);
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'themeAccent': nextKey,
+        }, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('Error saving dark mode: $e');
+      }
+    }
+    if (mounted) setState(() {});
   }
 
   Future<void> _openEditProfile({
@@ -276,13 +290,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = appThemeNotifier.value;
+    final cs = Theme.of(context).colorScheme;
     final user = FirebaseAuth.instance.currentUser;
     final userDocStream = user == null
         ? null
         : FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots();
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: cs.surfaceContainerLowest,
       body: SafeArea(
         bottom: false,
         child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -308,359 +323,612 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             return ListView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 140),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 36),
               children: [
-                // ── Top Nav Row ──
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (Navigator.canPop(context))
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Icon(Icons.arrow_back_rounded, size: 22, color: U.text),
-                      )
-                    else
-                      const SizedBox(width: 22),
-                    Row(
-                      children: [
-                        // View live profile
-                        if (user != null)
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                buildForwardRoute(
-                                  UserProfileScreen(
-                                    uid: user.uid,
-                                    displayName: displayName,
-                                    email: email,
-                                    photoUrl: displayPhotoUrl,
+                // ── Interceptor-style Header Row ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (Navigator.canPop(context))
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.arrow_back_rounded),
+                              color: cs.onSurface,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Profile',
+                              style: GoogleFonts.inter(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.4,
+                                color: cs.onSurface,
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Text.rich(
+                          TextSpan(
+                            text: 'profile',
+                            style: GoogleFonts.inter(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -1.2,
+                              color: cs.onSurface,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: '.',
+                                style: TextStyle(color: cs.primary),
+                              ),
+                            ],
+                          ),
+                          maxLines: 1,
+                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (user != null)
+                            IconButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  buildForwardRoute(
+                                    UserProfileScreen(
+                                      uid: user.uid,
+                                      displayName: displayName,
+                                      email: email,
+                                      photoUrl: displayPhotoUrl,
+                                    ),
                                   ),
+                                );
+                              },
+                              icon: const Icon(Icons.arrow_outward_rounded),
+                              color: cs.onSurfaceVariant,
+                              iconSize: 21,
+                              tooltip: 'View public profile',
+                            ),
+                          IconButton(
+                            onPressed: () {
+                              SharePlus.instance.share(
+                                ShareParams(
+                                  text:
+                                      'Join me on UTOPIA! 🚀 The academic productivity platform.\n\nhttps://inferalis.space/download-utopia',
                                 ),
                               );
                             },
-                            child: Icon(Icons.arrow_outward_rounded, size: 20, color: U.sub),
+                            icon: const Icon(Icons.ios_share_rounded),
+                            color: cs.onSurfaceVariant,
+                            iconSize: 20,
+                            tooltip: 'Share app',
                           ),
-                        const SizedBox(width: 16),
-                        GestureDetector(
-                          onTap: () {
-                            SharePlus.instance.share(
-                              ShareParams(
-                                text: 'Join me on UTOPIA! 🚀 The academic productivity platform.\n\nhttps://inferalis.space/download-utopia',
-                              ),
-                            );
-                          },
-                          child: Icon(Icons.ios_share_rounded, size: 20, color: U.sub),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 22),
+
+                // ── Profile Identity Card (stroke-free surfaceContainer) ──
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundColor: cs.primaryContainer,
+                            backgroundImage:
+                                displayPhotoUrl != null && displayPhotoUrl.isNotEmpty
+                                    ? CachedNetworkImageProvider(displayPhotoUrl)
+                                    : null,
+                            child: (displayPhotoUrl == null || displayPhotoUrl.isEmpty)
+                                ? Text(
+                                    (displayName.isNotEmpty ? displayName[0] : 'U')
+                                        .toUpperCase(),
+                                    style: GoogleFonts.inter(
+                                      color: cs.onPrimaryContainer,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        displayName,
+                                        style: GoogleFonts.inter(
+                                          color: cs.onSurface,
+                                          fontSize: 19,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.4,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (_isSuperUser) ...[
+                                      const SizedBox(width: 6),
+                                      const SuperUserBadge(size: 16),
+                                    ],
+                                  ],
+                                ),
+                                if (email.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Clipboard.setData(ClipboardData(text: email));
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Email copied',
+                                            style: GoogleFonts.inter(fontSize: 13),
+                                          ),
+                                          behavior: SnackBarBehavior.floating,
+                                          duration: const Duration(milliseconds: 1500),
+                                        ),
+                                      );
+                                    },
+                                    child: Text(
+                                      email,
+                                      style: GoogleFonts.inter(
+                                        color: cs.onSurfaceVariant,
+                                        fontSize: 12.5,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (bio.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        Text(
+                          bio,
+                          style: GoogleFonts.inter(
+                            color: cs.onSurfaceVariant,
+                            fontSize: 13.5,
+                            height: 1.45,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
+                      if (branch.isNotEmpty ||
+                          instagramId.isNotEmpty ||
+                          githubId.isNotEmpty ||
+                          discordId.isNotEmpty ||
+                          wavesCount > 0 ||
+                          (rollNumber.isNotEmpty && showRollNumber)) ...[
+                        const SizedBox(height: 14),
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (branch.isNotEmpty)
+                              _FlatChip(
+                                icon: Icons.school_outlined,
+                                label: branch,
+                                color: cs.primary,
+                              ),
+                            if (rollNumber.isNotEmpty && showRollNumber)
+                              _FlatChip(
+                                icon: Icons.badge_outlined,
+                                label: rollNumber,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            if (instagramId.isNotEmpty)
+                              InstagramBadge(handle: instagramId),
+                            if (githubId.isNotEmpty)
+                              GithubBadge(handle: githubId),
+                            if (discordId.isNotEmpty)
+                              DiscordBadge(handle: discordId),
+                            WaveCountBadge(count: wavesCount),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.tonalIcon(
+                          onPressed: () => _openEditProfile(
+                            name: displayName,
+                            bio: bio,
+                            instagram: instagramId,
+                            github: githubId,
+                            discord: discordId,
+                            branch: branch,
+                            rollNumber: rollNumber,
+                            photoUrl: displayPhotoUrl,
+                          ),
+                          icon: Icon(Icons.edit_outlined, size: 16, color: cs.onSurface),
+                          label: Text(
+                            'Edit profile',
+                            style: GoogleFonts.inter(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: cs.surfaceContainerHigh,
+                            foregroundColor: cs.onSurface,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // ── Projects Showcase Section ──
+                _UserProjectsProfileSection(userId: user?.uid ?? ''),
+                const SizedBox(height: 20),
+
+                // ── Section 1: Appearance (exact Interceptor Chrome M3 Settings layout) ──
+                const _ProfileSectionHeader('Appearance'),
+                _ProfileSettingsGroup(
+                  children: [
+                    _ProfileSettingsTile(
+                      leading: Icon(
+                        Icons.dark_mode_outlined,
+                        size: 22,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      title: 'Dark theme',
+                      subtitle: theme.isDark ? 'On' : 'Off',
+                      trailing: Switch.adaptive(
+                        value: theme.isDark,
+                        activeTrackColor: cs.primary,
+                        onChanged: _toggleDarkMode,
+                      ),
+                      onTap: () => _toggleDarkMode(!theme.isDark),
+                    ),
+                    _ProfileSettingsTile(
+                      leading: Icon(
+                        Icons.palette_outlined,
+                        size: 22,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      title: 'Theme accent',
+                      subtitle: _updatingTheme
+                          ? 'Updating...'
+                          : U.themeForKey(U.currentThemeKey).label,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: cs.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 20,
+                            color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                          ),
+                        ],
+                      ),
+                      onTap: _selectThemeStyle,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // ── Section 2: General ──
+                const _ProfileSectionHeader('General'),
+                _ProfileSettingsGroup(
+                  children: [
+                    _ProfileSettingsTile(
+                      leading: Icon(
+                        Icons.school_outlined,
+                        size: 22,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      title: 'University Campus',
+                      subtitle: U.cachedUniversityName.isNotEmpty
+                          ? U.cachedUniversityName
+                          : 'Choose campus',
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                      ),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const UniversitySelectionScreen(),
+                        ),
+                      ),
+                    ),
+                    _ProfileSettingsTile(
+                      leading: Icon(
+                        Icons.info_outline_rounded,
+                        size: 22,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      title: 'About UTOPIA',
+                      subtitle: 'Info & releases',
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                      ),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => UtopiaSectionScreen(
+                            initialIsSuperUser: _isSuperUser,
+                          ),
+                        ),
+                      ),
+                    ),
+                    _ProfileSettingsTile(
+                      leading: Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        size: 22,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      title: 'Feedback & Support',
+                      subtitle: 'Bugs & features',
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                      ),
+                      onTap: _openRaiseIssue,
+                    ),
+                    ValueListenableBuilder<bool>(
+                      valueListenable:
+                          ConsentService.instance.privacyOptionsRequired,
+                      builder: (context, isRequired, _) {
+                        if (!isRequired) return const SizedBox.shrink();
+                        return Column(
+                          children: [
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              indent: 68,
+                              endIndent: 16,
+                              color: cs.outlineVariant.withValues(alpha: 0.22),
+                            ),
+                            _ProfileSettingsTile(
+                              leading: Icon(
+                                Icons.privacy_tip_outlined,
+                                size: 22,
+                                color: cs.onSurfaceVariant,
+                              ),
+                              title: 'Privacy Settings',
+                              subtitle: 'Ad consent',
+                              trailing: Icon(
+                                Icons.chevron_right_rounded,
+                                size: 20,
+                                color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                              ),
+                              onTap: () async {
+                                final ok = await ConsentService.instance
+                                    .showPrivacyOptionsForm();
+                                if (!ok && context.mounted) {
+                                  U.showSnackBar(
+                                    context,
+                                    'Privacy settings are not available at this time.',
+                                    icon: Icons.info_outline_rounded,
+                                    iconColor: U.sub,
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // ── Section 3: Account ──
+                const _ProfileSectionHeader('Account'),
+                _ProfileSettingsGroup(
+                  children: [
+                    _ProfileSettingsTile(
+                      leading: Icon(
+                        Icons.logout_rounded,
+                        size: 22,
+                        color: cs.error,
+                      ),
+                      title: 'Sign out',
+                      titleColor: cs.error,
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: cs.error.withValues(alpha: 0.65),
+                      ),
+                      onTap: _showSignOutDialog,
                     ),
                   ],
                 ),
                 const SizedBox(height: 28),
 
-                // ── Avatar ── (centered, clean, no card)
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: theme.primary.withValues(alpha: 0.35),
-                        width: 2.0,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 48,
-                      backgroundColor: theme.primary.withValues(alpha: 0.08),
-                      backgroundImage: displayPhotoUrl != null && displayPhotoUrl.isNotEmpty
-                          ? CachedNetworkImageProvider(displayPhotoUrl)
-                          : null,
-                      child: (displayPhotoUrl == null || displayPhotoUrl.isEmpty)
-                          ? Text(
-                              (displayName.isNotEmpty ? displayName[0] : 'U').toUpperCase(),
-                              style: GoogleFonts.robotoFlex(
-                                color: theme.primary,
-                                fontSize: 34,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            )
-                          : null,
-                    ),
-                  ),
-                ).animate().fadeIn(duration: 400.ms).scale(begin: const Offset(0.92, 0.92), end: const Offset(1, 1), duration: 400.ms, curve: Curves.easeOutBack),
-                const SizedBox(height: 16),
-
-                // ── Name + Superuser badge ──
-                Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          displayName,
-                          style: GoogleFonts.robotoFlex(
-                            color: U.text,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (_isSuperUser) ...[
-                        const SizedBox(width: 6),
-                        const SuperUserBadge(size: 18),
-                      ],
-                    ],
-                  ),
-                ).animate().fadeIn(delay: 60.ms, duration: 350.ms),
-
-                // ── Email (plain text, tappable) ──
-                if (email.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        Clipboard.setData(ClipboardData(text: email));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: U.surfaceContainerHigh,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            duration: const Duration(milliseconds: 1500),
-                            content: Text(
-                              'Email copied to clipboard',
-                              style: GoogleFonts.robotoFlex(color: U.text, fontSize: 12.5),
-                            ),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        email,
-                        style: GoogleFonts.robotoFlex(
-                          color: U.sub,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ).animate().fadeIn(delay: 100.ms, duration: 350.ms),
-                ],
-
-                // ── Bio (plain text, no container) ──
-                if (bio.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 320),
-                      child: Text(
-                        bio,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.robotoFlex(
-                          color: U.text.withValues(alpha: 0.75),
-                          fontSize: 13,
-                          height: 1.5,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ).animate().fadeIn(delay: 120.ms, duration: 350.ms),
-                ],
-
-                // ── Badges (branch, socials, waves, roll) ──
-                if (branch.isNotEmpty ||
-                    instagramId.isNotEmpty ||
-                    githubId.isNotEmpty ||
-                    discordId.isNotEmpty ||
-                    wavesCount > 0 ||
-                    (rollNumber.isNotEmpty && showRollNumber)) ...[
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Wrap(
-                      alignment: WrapAlignment.center,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        if (branch.isNotEmpty)
-                          _FlatChip(
-                            icon: Icons.school_rounded,
-                            label: branch,
-                            color: theme.primary,
-                          ),
-                        if (rollNumber.isNotEmpty && showRollNumber)
-                          _FlatChip(
-                            icon: Icons.badge_outlined,
-                            label: rollNumber,
-                            color: U.sub,
-                          ),
-                        if (instagramId.isNotEmpty)
-                          InstagramBadge(handle: instagramId),
-                        if (githubId.isNotEmpty)
-                          GithubBadge(handle: githubId),
-                        if (discordId.isNotEmpty)
-                          DiscordBadge(handle: discordId),
-                        WaveCountBadge(count: wavesCount),
-                      ],
-                    ),
-                  ).animate().fadeIn(delay: 160.ms, duration: 350.ms),
-                ],
-
-                // ── Edit Profile Button ──
-                const SizedBox(height: 22),
-                Center(
-                  child: FilledButton.tonalIcon(
-                    onPressed: () => _openEditProfile(
-                      name: displayName,
-                      bio: bio,
-                      instagram: instagramId,
-                      github: githubId,
-                      discord: discordId,
-                      branch: branch,
-                      rollNumber: rollNumber,
-                      photoUrl: displayPhotoUrl,
-                    ),
-                    icon: Icon(Icons.edit_rounded, size: 15, color: theme.primary),
-                    label: Text(
-                      'Edit Profile',
-                      style: GoogleFonts.robotoFlex(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: theme.primary,
-                      ),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: theme.primary.withValues(alpha: 0.10),
-                      foregroundColor: theme.primary,
-                      shape: RoundedRectangleBorder(borderRadius: M3Shapes.fullRadius),
-                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                      elevation: 0,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 200.ms, duration: 350.ms),
-
-                // ── Thin separator ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 28),
-                  child: Divider(height: 1, thickness: 0.5, color: U.outlineVariant.withValues(alpha: 0.3)),
-                ),
-
-                // ── Projects Showcase Section ──
-                _UserProjectsProfileSection(userId: user?.uid ?? ''),
-                const SizedBox(height: 8),
-
-
-                // ── Thin separator before settings ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Divider(height: 1, thickness: 0.5, color: U.outlineVariant.withValues(alpha: 0.3)),
-                ),
-
-                // ── Settings (flat list, no card wrapper) ──
-                _FlatSettingsRow(
-                  icon: Icons.palette_rounded,
-                  color: theme.peach,
-                  title: 'Themes & Colors',
-                  value: _updatingTheme
-                      ? 'Updating...'
-                      : U.themeForKey(U.currentThemeKey).label,
-                  onTap: _selectThemeStyle,
-                ),
-                _FlatSettingsRow(
-                  icon: Icons.school_rounded,
-                  color: theme.blue,
-                  title: 'University Campus',
-                  value: U.cachedUniversityName.isNotEmpty
-                      ? U.cachedUniversityName
-                      : 'Choose campus',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const UniversitySelectionScreen(),
-                    ),
-                  ),
-                ),
-                _FlatSettingsRow(
-                  icon: Icons.rocket_launch_rounded,
-                  color: theme.lavender,
-                  title: 'About UTOPIA',
-                  value: 'Info & releases',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => UtopiaSectionScreen(
-                        initialIsSuperUser: _isSuperUser,
-                      ),
-                    ),
-                  ),
-                ),
-                _FlatSettingsRow(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  color: theme.teal,
-                  title: 'Feedback & Support',
-                  value: 'Bugs & features',
-                  onTap: _openRaiseIssue,
-                ),
-                ValueListenableBuilder<bool>(
-                  valueListenable: ConsentService.instance.privacyOptionsRequired,
-                  builder: (context, isRequired, _) {
-                    if (!isRequired) return const SizedBox.shrink();
-                    return _FlatSettingsRow(
-                      icon: Icons.privacy_tip_outlined,
-                      color: theme.sub,
-                      title: 'Privacy Settings',
-                      value: 'Ad consent',
-                      onTap: () async {
-                        final ok = await ConsentService.instance.showPrivacyOptionsForm();
-                        if (!ok && context.mounted) {
-                          U.showSnackBar(
-                            context,
-                            'Privacy settings are not available at this time.',
-                            icon: Icons.info_outline_rounded,
-                            iconColor: U.sub,
-                          );
-                        }
-                      },
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 36),
-
-                // ── Sign Out ──
-                Center(
-                  child: GestureDetector(
-                    onTap: _showSignOutDialog,
-                    child: Text(
-                      'Sign Out',
-                      style: GoogleFonts.robotoFlex(
-                        color: U.red,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Footer
                 Center(
                   child: Text(
-                    '𝕀 ℕ 𝔽 𝔼 ℝ ℕ 𝕆',
-                    style: GoogleFonts.robotoFlex(
-                      color: U.dim,
-                      fontSize: 11,
-                      letterSpacing: 0.2,
+                    'utopia.',
+                    style: GoogleFonts.inter(
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ),
-              ],
+              ]
+                  .animate(interval: 30.ms)
+                  .fadeIn(duration: 250.ms, curve: Curves.easeOut),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileSectionHeader extends StatelessWidget {
+  final String title;
+  const _ProfileSectionHeader(this.title);
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, bottom: 8),
+      child: Text(
+        title,
+        style: GoogleFonts.inter(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
+          color: cs.onSurfaceVariant.withValues(alpha: 0.85),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileSettingsGroup extends StatelessWidget {
+  final List<Widget> children;
+  const _ProfileSettingsGroup({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0 && children[i] is! ValueListenableBuilder)
+              Divider(
+                height: 1,
+                thickness: 1,
+                indent: 68,
+                endIndent: 16,
+                color: cs.outlineVariant.withValues(alpha: 0.22),
+              ),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileSettingsTile extends StatelessWidget {
+  final Widget leading;
+  final String title;
+  final Color? titleColor;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  const _ProfileSettingsTile({
+    required this.leading,
+    required this.title,
+    this.titleColor,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 38,
+                child: Center(child: leading),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: -0.2,
+                        color: titleColor ?? cs.onSurface,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          height: 1.25,
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 10),
+                trailing!,
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -684,7 +952,7 @@ class _FlatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: color.withValues(alpha: 0.12),
         borderRadius: M3Shapes.fullRadius,
       ),
       child: Row(
@@ -694,7 +962,7 @@ class _FlatChip extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             label,
-            style: GoogleFonts.robotoFlex(
+            style: GoogleFonts.inter(
               color: color,
               fontSize: 11.5,
               fontWeight: FontWeight.w600,
@@ -702,65 +970,6 @@ class _FlatChip extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Flat settings row — no card background, just a clean row with hairline divider
-class _FlatSettingsRow extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String value;
-  final VoidCallback onTap;
-
-  const _FlatSettingsRow({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.value,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        M3Pressable(
-          onTap: onTap,
-          scaleFactor: 0.99,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: GoogleFonts.robotoFlex(
-                      color: U.text,
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                Text(
-                  value,
-                  style: GoogleFonts.robotoFlex(
-                    color: U.dim,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(Icons.chevron_right_rounded, color: U.dim, size: 18),
-              ],
-            ),
-          ),
-        ),
-        Divider(height: 1, thickness: 0.4, color: U.outlineVariant.withValues(alpha: 0.25)),
-      ],
     );
   }
 }
@@ -1433,7 +1642,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   }
 }
 
-// ── Simple & Clean Theme Selector Sheet ──
+// ── Interceptor-style Theme Selector Sheet (Dark/Light + 5 Accent Swatches) ──
 class _ThemeStyleSheet extends StatefulWidget {
   const _ThemeStyleSheet({required this.currentKey});
 
@@ -1446,233 +1655,198 @@ class _ThemeStyleSheet extends StatefulWidget {
 class _ThemeStyleSheetState extends State<_ThemeStyleSheet> {
   @override
   Widget build(BuildContext context) {
-    final filteredThemes = appThemes;
+    return ValueListenableBuilder<AppTheme>(
+      valueListenable: appThemeNotifier,
+      builder: (context, activeTheme, _) {
+        final cs = activeTheme.colorScheme;
+        final isDark = activeTheme.isDark;
+        final accents = U.themesForBrightness(isDark);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.65,
-      minChildSize: 0.40,
-      maxChildSize: 0.85,
-      expand: false,
-      builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: U.surfaceContainerHigh,
+            color: cs.surfaceContainer,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(
-              color: U.outlineVariant.withValues(alpha: 0.35),
-              width: 0.8,
-            ),
           ),
           child: SafeArea(
             top: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Drag handle
-                const SizedBox(height: 12),
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: U.outlineVariant,
-                      borderRadius: M3Shapes.fullRadius,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
-
-                // Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
+                  const SizedBox(height: 18),
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'App Themes',
-                        style: GoogleFonts.robotoFlex(
-                          color: U.text,
+                        'Theme accent',
+                        style: GoogleFonts.inter(
                           fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close_rounded, color: U.sub, size: 20),
-                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: cs.onSurfaceVariant,
+                          size: 20,
+                        ),
+                        onPressed: () =>
+                            Navigator.pop(context, activeTheme.key),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                // Content List
-                Expanded(
-                  child: ListView(
-                    controller: scrollController,
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-                    children: [
-                      ...filteredThemes.map((t) {
-                        final isSelected = t.key == appThemeNotifier.value.key;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: _ThemePaletteTile(
-                            theme: t,
-                            isSelected: isSelected,
-                            onTap: () async {
+                  // Dark Theme Toggle (exact Interceptor Settings style)
+                  InkWell(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      final nextKey = U.counterpartKey(
+                        activeTheme.key,
+                        !isDark,
+                      );
+                      U.applyTheme(nextKey);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isDark
+                                ? Icons.dark_mode_outlined
+                                : Icons.light_mode_outlined,
+                            color: cs.primary,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Dark theme',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.onSurface,
+                                  ),
+                                ),
+                                Text(
+                                  isDark ? 'On' : 'Off',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch.adaptive(
+                            value: isDark,
+                            activeTrackColor: cs.primary,
+                            onChanged: (val) {
                               HapticFeedback.selectionClick();
-                              appThemeNotifier.value = t;
-                              try {
-                                final prefs = await SharedPreferences.getInstance();
-                                await prefs.setInt('theme_primary_color_value', t.primary.value);
-                              } catch (_) {}
-                              if (context.mounted) {
-                                Navigator.pop(context, t.key);
-                              }
+                              final nextKey = U.counterpartKey(
+                                activeTheme.key,
+                                val,
+                              );
+                              U.applyTheme(nextKey);
                             },
                           ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ThemePaletteTile extends StatelessWidget {
-  const _ThemePaletteTile({
-    required this.theme,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final AppTheme theme;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final activeTheme = appThemeNotifier.value;
-    final isDark = activeTheme.isDark;
-
-    return M3Pressable(
-      onTap: onTap,
-      scaleFactor: 0.98,
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? activeTheme.primary.withValues(alpha: 0.10)
-              : (isDark ? U.surfaceContainerLowest.withValues(alpha: 0.5) : U.surfaceContainer),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? activeTheme.primary : U.outlineVariant.withValues(alpha: 0.35),
-            width: isSelected ? 1.6 : 0.8,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Theme Mini-Card Swatch
-            Container(
-              width: 36,
-              height: 36,
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: theme.bg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: theme.border,
-                  width: 1.2,
-                ),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: theme.card,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: theme.primary,
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
+                  const SizedBox(height: 22),
 
-            // Theme Name & Description
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          theme.label,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.robotoFlex(
-                            color: U.text,
-                            fontSize: 14,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  // 5 Interceptor Circular Accent Swatches
+                  Wrap(
+                    spacing: 18,
+                    runSpacing: 16,
+                    children: accents.map((t) {
+                      final isSelected = t.key == activeTheme.key;
+                      final accentColor = t.primary;
+                      final iconColor =
+                          ThemeData.estimateBrightnessForColor(accentColor) ==
+                                  Brightness.dark
+                              ? Colors.white
+                              : Colors.black;
+
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          U.applyTheme(t.key);
+                          Navigator.pop(context, t.key);
+                        },
+                        child: SizedBox(
+                          width: 58,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: accentColor,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: isSelected
+                                    ? Icon(
+                                        Icons.check_rounded,
+                                        size: 24,
+                                        color: iconColor,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                t.label.split(' ').first,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.inter(
+                                  fontSize: 11.5,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  color: isSelected
+                                      ? cs.onSurface
+                                      : cs.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: theme.isDark
-                              ? theme.primary.withValues(alpha: 0.15)
-                              : theme.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          theme.isDark ? 'DARK' : 'LIGHT',
-                          style: GoogleFonts.robotoFlex(
-                            color: theme.primary,
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    theme.description,
-                    style: GoogleFonts.robotoFlex(
-                      color: U.sub,
-                      fontSize: 11.5,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
             ),
-
-            // Selection indicator
-            if (isSelected)
-              Icon(Icons.check_circle_rounded, color: activeTheme.primary, size: 20)
-            else
-              Icon(Icons.circle_outlined, color: U.dim.withValues(alpha: 0.35), size: 20),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
